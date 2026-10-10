@@ -199,7 +199,7 @@ function flashHTML(c, { reveal = false } = {}) {
       <p class="front">${esc(c.front)}</p>
       ${reveal ? `
       <div class="answer">
-        <p class="back">${esc(c.back)}</p>
+        <p class="back"><span>${esc(c.back)}</span></p>
         ${c.explanation ? `<p class="expl">${esc(c.explanation)}</p>` : ""}
         ${c.attribution ? `<span class="attr">${esc(c.attribution)}</span>` : ""}
         ${c.quote ? `<blockquote class="quote">„${esc(c.quote)}“</blockquote>` : ""}
