@@ -1,0 +1,72 @@
+name: Wissenstrainer (privat)
+
+# Private Ablage: Dokumente in privat/<Paket>/ werden zu Lernkarten in karten/<paket>.json.
+# Das Werkzeug dafür kommt aus dem öffentlichen Repo, die Dokumente verlassen dieses Repo nur
+# in Richtung Claude-API.
+on:
+  push:
+    branches: [main]
+    paths: ["privat/**", ".github/workflows/wissenstrainer-privat.yml"]
+  workflow_dispatch:
+    inputs:
+      retry_failed:
+        description: "Fehlgeschlagene Dokumente erneut versuchen"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wissenstrainer-privat
+  cancel-in-progress: false
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Werkzeug aus dem öffentlichen Repo holen
+        uses: actions/checkout@v4
+        with:
+          repository: tilopatzolt/lehrreich
+          path: _werkzeug
+          sparse-checkout: wissenstrainer/pipeline
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r _werkzeug/wissenstrainer/pipeline/requirements.txt
+
+      - name: Dokumente verarbeiten
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          WT_MODEL: ${{ vars.WT_MODEL }}
+          WT_EFFORT: ${{ vars.WT_EFFORT }}
+          WT_MAX_CARDS: ${{ vars.WT_MAX_CARDS }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::Secret ANTHROPIC_API_KEY fehlt – bitte unter Settings → Secrets and variables → Actions anlegen."
+            exit 1
+          fi
+          [ -z "$WT_MODEL" ] && unset WT_MODEL
+          [ -z "$WT_EFFORT" ] && unset WT_EFFORT
+          [ -z "$WT_MAX_CARDS" ] && unset WT_MAX_CARDS
+          args="--prune"
+          ${{ inputs.retry_failed == true }} && args="$args --retry-failed"
+          python _werkzeug/wissenstrainer/pipeline/extract.py --inbox privat --out karten --visibility privat $args
+
+      - name: Karten speichern
+        run: |
+          git add karten
+          if git diff --cached --quiet; then
+            echo "Keine Änderungen an den Karten."
+            exit 0
+          fi
+          git config user.name "wissenstrainer-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Wissenstrainer: Pakete aktualisiert"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

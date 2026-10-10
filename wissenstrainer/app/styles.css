@@ -415,3 +415,74 @@ body.focus #toast { bottom: calc(env(safe-area-inset-bottom) + 110px); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- Pakete ---------- */
+.vis {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 700; letter-spacing: .03em;
+  padding: 3px 9px 3px 7px; border-radius: 999px;
+}
+.vis svg { width: 13px; height: 13px; stroke-width: 2.2; }
+.vis-priv { background: var(--ink); color: var(--bg); }
+.vis-pub { background: var(--mark-soft); color: var(--ink); }
+h2.section svg { width: 18px; height: 18px; margin-right: 6px; vertical-align: -2px; }
+h2.section small a { color: var(--accent); text-decoration: none; font-weight: 600; }
+
+.pkg-scroll {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 62%); gap: 10px;
+  overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; scroll-padding-inline: var(--gutter);
+  margin: 0 calc(-1 * var(--gutter)); padding: 2px var(--gutter) 12px;
+}
+.pkg-scroll::-webkit-scrollbar { display: none; }
+.pkg-tile {
+  scroll-snap-align: start; display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  padding: 14px; border-radius: var(--r-sm); background: var(--surface); box-shadow: var(--shadow); text-decoration: none; min-width: 0;
+}
+.pkg-tile b { font: 700 17px/1.2 var(--display); letter-spacing: -.01em; text-wrap: balance; }
+.pkg-tile span.faint { font-size: 12.5px; }
+.pkg-tile .bar { width: 100%; margin-top: auto; }
+.pkg-tile.paused { opacity: .6; }
+
+.pkg-row { text-decoration: none; padding-left: 16px; }
+.pkg-row::before { display: none; }
+.pkg-row-top { display: flex; gap: 8px; align-items: center; }
+.pkg-row h3 { font: 700 18px/1.2 var(--display); margin: 8px 0 2px; letter-spacing: -.01em; }
+.pkg-row .bar { margin-top: 10px; }
+
+.back-link { display: inline-flex; align-items: center; gap: 2px; color: var(--ink-2); text-decoration: none; font-weight: 600; font-size: 14px; margin: -6px 0 14px -6px; }
+.back-link svg { width: 20px; height: 20px; }
+.pkg-head { margin-bottom: 8px; }
+.item > svg { color: var(--ink-2); }
+.item-btn { width: 100%; border: 0; background: none; text-align: left; text-decoration: none; color: inherit; }
+.item-btn:active { background: var(--surface-2); }
+.btn.danger-fill { background: var(--bad); color: #fff; }
+.seg button[disabled] { opacity: .4; }
+.seg button svg { width: 15px; height: 15px; vertical-align: -2px; margin-right: 4px; }
+.field small { font-size: 12.5px; }
+
+/* ---------- Lernzettel ---------- */
+.zettel-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.zettel { background: var(--surface); border-radius: var(--r-sm); box-shadow: var(--shadow); padding: 24px 20px; }
+.zettel h1 { font: 800 30px/1.1 var(--display); letter-spacing: -.02em; margin: 0 0 8px; text-wrap: balance; }
+.zettel-src { font-size: 13px; color: var(--ink-3); margin: 0 0 8px; }
+.zettel h2 { font: 700 15px var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); margin: 26px 0 8px; padding-bottom: 6px; border-bottom: 2px solid var(--mark); }
+.zettel dl { margin: 0; display: grid; gap: 12px; }
+.zettel dl > div { break-inside: avoid; }
+.zettel dt { font: 600 16px/1.35 var(--serif); }
+.zettel dt .type-chip { font-size: 10px; margin-right: 8px; vertical-align: 2px; }
+.zettel dd { margin: 3px 0 0; font-size: 14.5px; line-height: 1.45; }
+.zettel dd .muted { font-size: 13px; }
+.zettel mark { background: linear-gradient(transparent 55%, var(--mark-soft) 55%); color: inherit; }
+
+@media print {
+  :root, :root[data-theme="dark"] {
+    --bg: #fff; --surface: #fff; --ink: #000; --ink-2: #333; --ink-3: #555; --mark-soft: #fff1a6; --mark: #f2c500;
+  }
+  body { background: #fff; }
+  .tabbar, .no-print, #toast, #sheet-root { display: none !important; }
+  #view { padding: 0; max-width: none; }
+  .zettel { box-shadow: none; padding: 0; }
+  .zettel dl { display: block; columns: 2; column-gap: 28px; }
+  .zettel dl > div { margin-bottom: 10px; }
+  .zettel mark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

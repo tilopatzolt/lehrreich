@@ -1,7 +1,11 @@
 {
- "version": 1,
- "updated": null,
+ "version": 2,
+ "id": "beispiel-schuldenbremse",
+ "name": "Beispiel: Schuldenbremse",
+ "visibility": "oeffentlich",
  "demo": true,
+ "published_from_private": true,
+ "updated": "2026-10-10T08:00:00+00:00",
  "sources": [
   {
    "id": "demo",
@@ -21,7 +25,7 @@
  ],
  "cards": [
   {
-   "id": "demo00",
+   "id": "demo-00",
    "source": "demo",
    "created": "2026-10-10T08:00:00+00:00",
    "type": "fakt",
@@ -36,7 +40,7 @@
    "importance": 3
   },
   {
-   "id": "demo01",
+   "id": "demo-01",
    "source": "demo",
    "created": "2026-10-10T08:00:00+00:00",
    "type": "zahl",
@@ -51,7 +55,7 @@
    "importance": 3
   },
   {
-   "id": "demo02",
+   "id": "demo-02",
    "source": "demo",
    "created": "2026-10-10T08:00:00+00:00",
    "type": "zitat",
@@ -66,7 +70,7 @@
    "importance": 2
   },
   {
-   "id": "demo03",
+   "id": "demo-03",
    "source": "demo",
    "created": "2026-10-10T08:00:00+00:00",
    "type": "begriff",
@@ -81,7 +85,7 @@
    "importance": 2
   },
   {
-   "id": "demo04",
+   "id": "demo-04",
    "source": "demo",
    "created": "2026-10-10T08:00:00+00:00",
    "type": "fakt",
@@ -96,7 +100,7 @@
    "importance": 3
   },
   {
-   "id": "demo05",
+   "id": "demo-05",
    "source": "demo",
    "created": "2026-10-10T08:00:00+00:00",
    "type": "beispiel",
@@ -111,7 +115,7 @@
    "importance": 2
   },
   {
-   "id": "demo06",
+   "id": "demo-06",
    "source": "demo",
    "created": "2026-10-10T08:00:00+00:00",
    "type": "beispiel",
@@ -126,7 +130,7 @@
    "importance": 3
   },
   {
-   "id": "demo07",
+   "id": "demo-07",
    "source": "demo",
    "created": "2026-10-10T08:00:00+00:00",
    "type": "fakt",
@@ -141,7 +145,7 @@
    "importance": 3
   },
   {
-   "id": "demo08",
+   "id": "demo-08",
    "source": "demo",
    "created": "2026-10-10T08:00:00+00:00",
    "type": "argument",
@@ -156,7 +160,7 @@
    "importance": 3
   },
   {
-   "id": "demo09",
+   "id": "demo-09",
    "source": "demo",
    "created": "2026-10-10T08:00:00+00:00",
    "type": "argument",
@@ -171,7 +175,7 @@
    "importance": 3
   },
   {
-   "id": "demo10",
+   "id": "demo-10",
    "source": "demo",
    "created": "2026-10-10T08:00:00+00:00",
    "type": "begriff",

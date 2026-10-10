@@ -1,7 +1,8 @@
 name: Wissenstrainer
 
-# Läuft, sobald etwas in wissenstrainer/ auf main landet (z. B. ein neues Dokument in inbox/):
-# 1. neue Dokumente mit Claude in Lernkarten umwandeln und library.json zurück ins Repo schreiben
+# Läuft, sobald etwas in wissenstrainer/ auf main landet (z. B. ein neues Dokument in oeffentlich/):
+# 1. neue Dokumente mit Claude in Lernkarten-Pakete umwandeln (ein Unterordner = ein Paket)
+#    und die Pakete nach wissenstrainer/app/data/pakete/ schreiben
 # 2. die App unter wissenstrainer/app auf GitHub Pages veröffentlichen
 on:
   push:
@@ -11,10 +12,6 @@ on:
     inputs:
       retry_failed:
         description: "Fehlgeschlagene Dokumente erneut versuchen"
-        type: boolean
-        default: false
-      prune:
-        description: "Karten von Dokumenten entfernen, die nicht mehr in inbox/ liegen"
         type: boolean
         default: false
 
@@ -56,21 +53,21 @@ jobs:
           [ -z "$WT_MODEL" ] && unset WT_MODEL
           [ -z "$WT_EFFORT" ] && unset WT_EFFORT
           [ -z "$WT_MAX_CARDS" ] && unset WT_MAX_CARDS
-          args=""
+          # --prune: was nicht mehr im Ordner liegt, verschwindet auch aus dem Paket
+          args="--prune"
           ${{ inputs.retry_failed == true }} && args="$args --retry-failed"
-          ${{ inputs.prune == true }} && args="$args --prune"
           python wissenstrainer/pipeline/extract.py $args
 
       - name: Karten ins Repo schreiben
         run: |
-          if git diff --quiet -- wissenstrainer/app/data; then
+          git add wissenstrainer/app/data
+          if git diff --cached --quiet; then
             echo "Keine Änderungen an den Karten."
             exit 0
           fi
           git config user.name "wissenstrainer-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add wissenstrainer/app/data
-          git commit -m "Wissenstrainer: neue Karten aus inbox/"
+          git commit -m "Wissenstrainer: Pakete aktualisiert"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 

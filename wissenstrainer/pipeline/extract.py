@@ -1,12 +1,15 @@
-"""Erzeugt Lernkarten aus Dokumenten im Ordner wissenstrainer/inbox/.
+"""Erzeugt Lernkarten-Pakete aus Dokumenten.
 
-Neue oder geänderte Dateien (erkannt über SHA-256) werden an Claude geschickt,
-das Ergebnis landet in wissenstrainer/app/data/library.json, die die App lädt.
+Jeder Unterordner der Ablage ist ein Paket, z. B. oeffentlich/Schuldenbremse/.
+Dateien direkt in der Ablage landen im Paket "Allgemein". Neue oder geänderte
+Dateien (erkannt am Inhalt) werden an Claude geschickt; pro Paket entsteht eine
+JSON-Datei im Ausgabeordner, dazu eine index.json mit allen Paketen.
 
-Aufruf:
-    python wissenstrainer/pipeline/extract.py            # neue Dokumente verarbeiten
-    python wissenstrainer/pipeline/extract.py --dry-run  # nur anzeigen, was passieren würde
-    python wissenstrainer/pipeline/extract.py --prune    # Quellen entfernen, deren Datei fehlt
+Aufruf (Standard ist die öffentliche Ablage dieses Repos):
+    python wissenstrainer/pipeline/extract.py
+    python wissenstrainer/pipeline/extract.py --dry-run   # nur anzeigen
+    python wissenstrainer/pipeline/extract.py --prune     # Karten gelöschter Dateien entfernen
+    python extract.py --inbox privat --out karten --visibility privat   # private Ablage
 
 Umgebungsvariablen:
     ANTHROPIC_API_KEY   API-Schlüssel (Pflicht, außer bei --dry-run)
@@ -29,8 +32,9 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-INBOX = ROOT / "inbox"
-LIBRARY = ROOT / "app" / "data" / "library.json"
+DEFAULT_INBOX = ROOT / "oeffentlich"
+DEFAULT_OUT = ROOT / "app" / "data" / "pakete"
+LOOSE_PACKAGE = "Allgemein"
 
 MODEL = os.environ.get("WT_MODEL", "claude-opus-5-5")
 EFFORT = os.environ.get("WT_EFFORT", "high")
@@ -206,34 +210,45 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def load_library() -> dict:
-    if LIBRARY.exists():
-        return json.loads(LIBRARY.read_text(encoding="utf-8"))
-    return {"version": 1, "updated": None, "sources": [], "cards": []}
+def now_iso() -> str:
+    return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
 
 
-def save_library(library: dict) -> None:
-    library["updated"] = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
-    LIBRARY.parent.mkdir(parents=True, exist_ok=True)
-    LIBRARY.write_text(json.dumps(library, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+def slugify(name: str) -> str:
+    s = name.lower()
+    for a, b in (("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss")):
+        s = s.replace(a, b)
+    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    return s or "paket"
 
 
-def existing_fronts(library: dict, limit: int = 400) -> str:
-    fronts = [c["front"] for c in library["cards"]][-limit:]
+def load_json(path: Path) -> dict | None:
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return None
+
+
+def write_json(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+
+
+def existing_fronts(package: dict, limit: int = 400) -> str:
+    fronts = [c["front"] for c in package["cards"]][-limit:]
     if not fronts:
         return ""
     joined = "\n".join(f"- {f}" for f in fronts)
     return (
-        "\n\nDiese Karten gibt es im Pool schon. Lege keine inhaltlich gleichen Karten an; "
+        "\n\nDiese Karten gibt es in diesem Paket schon. Lege keine inhaltlich gleichen Karten an; "
         "eine neue Karte zum selben Thema ist nur sinnvoll, wenn sie etwas Neues beiträgt "
         f"(andere Zahl, andere Perspektive, Widerspruch):\n{joined}"
     )
 
 
-def call_claude(client, block: dict, library: dict) -> dict:
+def call_claude(client, block: dict, package: dict) -> dict:
     prompt = (
         f"Erstelle Lernkarten aus diesem Dokument, höchstens {MAX_CARDS} Stück."
-        + existing_fronts(library)
+        + existing_fronts(package)
     )
     with client.beta.messages.stream(
         model=MODEL,
@@ -255,34 +270,55 @@ def call_claude(client, block: dict, library: dict) -> dict:
     return json.loads(text)
 
 
-def card_id(source_id: str, front: str) -> str:
-    return hashlib.sha1(f"{source_id}|{front}".encode("utf-8")).hexdigest()[:12]
+def card_id(package_id: str, source_id: str, front: str) -> str:
+    return hashlib.sha1(f"{package_id}|{source_id}|{front}".encode("utf-8")).hexdigest()[:12]
 
 
-def process(path: Path, digest: str, client, library: dict) -> tuple[dict, list[dict]]:
-    result = call_claude(client, document_block(path), library)
-    meta = result["document"]
-    source_id = digest[:10]
-    now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
-    source = {
-        "id": source_id,
-        "file": path.name,
-        "sha256": digest,
-        "added": now,
-        "model": MODEL,
-        "status": "ok",
-        **meta,
-    }
-    cards = []
-    seen = set()
-    for raw in result["cards"]:
-        cid = card_id(source_id, raw["front"])
+def build_cards(package_id: str, source_id: str, raw_cards: list[dict], created: str) -> list[dict]:
+    cards, seen = [], set()
+    for raw in raw_cards:
+        raw = {k: v for k, v in raw.items() if k not in ("id", "source", "created")}
+        cid = card_id(package_id, source_id, raw["front"])
         if cid in seen:
             continue
         seen.add(cid)
-        cards.append({"id": cid, "source": source_id, "created": now, **raw})
-    source["card_count"] = len(cards)
-    return source, cards
+        cards.append({"id": cid, "source": source_id, "created": created, **raw})
+    return cards
+
+
+def scan_inbox(inbox: Path) -> dict[str, list[Path]]:
+    """Ordnet jede unterstützte Datei ihrem Paket (= Unterordner) zu."""
+    packages: dict[str, list[Path]] = {}
+    if not inbox.exists():
+        return packages
+    for path in sorted(inbox.rglob("*")):
+        rel = path.relative_to(inbox)
+        if not path.is_file() or path.suffix.lower() not in SUPPORTED:
+            continue
+        if any(part.startswith(".") for part in rel.parts):
+            continue
+        name = rel.parts[0] if len(rel.parts) > 1 else LOOSE_PACKAGE
+        packages.setdefault(name, []).append(path)
+    return packages
+
+
+def write_index(out: Path) -> bool:
+    entries = []
+    for path in sorted(out.glob("*.json")):
+        if path.name == "index.json":
+            continue
+        p = json.loads(path.read_text(encoding="utf-8"))
+        entries.append({
+            "id": p["id"], "name": p["name"], "visibility": p.get("visibility", ""),
+            "cards": len(p.get("cards", [])), "sources": len(p.get("sources", [])),
+            "updated": p.get("updated"),
+        })
+    index = {"version": 2, "pakete": entries}
+    old = load_json(out / "index.json")
+    if old == index:
+        return False
+    write_json(out / "index.json", index)
+    return True
 
 
 def write_summary(lines: list[str]) -> None:
@@ -294,84 +330,127 @@ def write_summary(lines: list[str]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--inbox", type=Path, default=DEFAULT_INBOX, help="Ablage mit Paket-Unterordnern")
+    parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="Ordner für die Paket-Dateien")
+    parser.add_argument("--visibility", choices=["oeffentlich", "privat"], default="oeffentlich")
     parser.add_argument("--dry-run", action="store_true", help="nichts an Claude senden, nur auflisten")
-    parser.add_argument("--prune", action="store_true", help="Quellen ohne Datei in inbox/ entfernen")
+    parser.add_argument("--prune", action="store_true", help="Karten gelöschter Dateien entfernen")
     parser.add_argument("--retry-failed", action="store_true", help="fehlgeschlagene Dokumente erneut versuchen")
     args = parser.parse_args()
 
-    library = load_library()
-    files = sorted(
-        p for p in INBOX.iterdir()
-        if p.is_file() and p.suffix.lower() in SUPPORTED and not p.name.startswith(".")
-    )
-    by_sha = {s["sha256"]: s for s in library["sources"]}
-    by_file = {s["file"]: s for s in library["sources"]}
+    inbox_files = scan_inbox(args.inbox)
+    existing = {p.stem: load_json(p) for p in args.out.glob("*.json") if p.name != "index.json"} if args.out.exists() else {}
 
-    todo = []
-    for path in files:
-        digest = sha256(path)
-        known = by_sha.get(digest)
-        if known and not (args.retry_failed and known["status"] != "ok"):
-            continue
-        todo.append((path, digest))
+    # Bereits verarbeitete Dokumente aus allen Paketen: verschiebt man eine Datei in ein
+    # anderes Paket, werden ihre Karten übernommen statt neu erzeugt.
+    known: dict[str, tuple[dict, list[dict]]] = {}
+    for pkg in existing.values():
+        for src in pkg.get("sources", []):
+            if src.get("status") == "ok":
+                known[src["sha256"]] = (src, [c for c in pkg["cards"] if c["source"] == src["id"]])
 
     report = ["## Wissenstrainer: Dokumente verarbeiten", ""]
-    changed = False
+    client = None
+    changed_any = False
 
-    if args.prune:
-        present = {p.name for p in files}
-        gone = [s for s in library["sources"] if s["file"] not in present]
-        if gone:
-            gone_ids = {s["id"] for s in gone}
-            library["sources"] = [s for s in library["sources"] if s["id"] not in gone_ids]
-            library["cards"] = [c for c in library["cards"] if c["source"] not in gone_ids]
-            report += [f"- entfernt: {s['file']}" for s in gone]
+    for name, files in inbox_files.items():
+        pid = slugify(name)
+        pkg = existing.get(pid) or {
+            "version": 2, "id": pid, "name": name, "visibility": args.visibility,
+            "managed": True, "updated": None, "sources": [], "cards": [],
+        }
+        pkg["name"] = name
+        changed = False
+        by_sha = {s["sha256"]: s for s in pkg["sources"]}
+        by_file = {s["file"]: s for s in pkg["sources"]}
+        present = set()
+
+        for path in files:
+            base = args.inbox if path.parent == args.inbox else args.inbox / name
+            rel = str(path.relative_to(base))
+            present.add(rel)
+            digest = sha256(path)
+            mine = by_sha.get(digest)
+            if mine and not (args.retry_failed and mine.get("status") != "ok"):
+                continue
+            old = by_file.get(rel) or mine
+
+            if args.dry_run:
+                how = "übernehmen" if digest in known else "an Claude senden"
+                print(f"[{name}] {rel}: {how}")
+                continue
+
+            created = now_iso()
+            source_id = digest[:10]
+            if digest in known:
+                prev_src, prev_cards = known[digest]
+                source = {**prev_src, "file": rel, "added": created}
+                cards = build_cards(pid, source_id, prev_cards, created)
+                note = "übernommen"
+            else:
+                if client is None:
+                    import anthropic
+                    client = anthropic.Anthropic()
+                print(f"→ [{name}] {rel}", flush=True)
+                try:
+                    result = call_claude(client, document_block(path), pkg)
+                except Exception as exc:  # pro Datei weitermachen, Fehler protokollieren
+                    print(f"  Fehler: {exc}", file=sys.stderr)
+                    report.append(f"- ❌ **{name} / {rel}**: {exc}")
+                    if old is None:
+                        pkg["sources"].append({
+                            "id": source_id, "file": rel, "sha256": digest, "added": created,
+                            "status": "fehler", "error": str(exc), "title": path.stem, "card_count": 0,
+                        })
+                        changed = True
+                    continue
+                source = {
+                    "id": source_id, "file": rel, "sha256": digest, "added": created,
+                    "model": MODEL, "status": "ok", **result["document"],
+                }
+                cards = build_cards(pid, source_id, result["cards"], created)
+                note = "neu"
+
+            if old is not None:
+                pkg["sources"] = [s for s in pkg["sources"] if s["id"] != old["id"]]
+                pkg["cards"] = [c for c in pkg["cards"] if c["source"] != old["id"]]
+            source["card_count"] = len(cards)
+            pkg["sources"].append(source)
+            pkg["cards"].extend(cards)
             changed = True
+            print(f"  {len(cards)} Karten ({note}): {source.get('title') or rel}")
+            report.append(f"- ✅ **{name}**: {source.get('title') or rel} – {len(cards)} Karten")
 
-    if not todo:
+        if args.prune and not args.dry_run:
+            gone = [s for s in pkg["sources"] if s["file"] not in present]
+            if gone:
+                ids = {s["id"] for s in gone}
+                pkg["sources"] = [s for s in pkg["sources"] if s["id"] not in ids]
+                pkg["cards"] = [c for c in pkg["cards"] if c["source"] not in ids]
+                report += [f"- 🗑 {name}: {s['file']} entfernt" for s in gone]
+                changed = True
+
+        if changed:
+            pkg["updated"] = now_iso()
+            write_json(args.out / f"{pid}.json", pkg)
+            changed_any = True
+
+    if args.prune and not args.dry_run:
+        wanted = {slugify(n) for n in inbox_files}
+        for pid, pkg in existing.items():
+            # Nur Pakete aus Ordnern entfernen, nicht veröffentlichte Pakete aus der privaten Ablage.
+            if pkg.get("managed") and pid not in wanted:
+                (args.out / f"{pid}.json").unlink()
+                report.append(f"- 🗑 Paket {pkg['name']} entfernt (Ordner gelöscht)")
+                changed_any = True
+
+    if args.dry_run:
+        return 0
+    if args.out.exists() and write_index(args.out):
+        changed_any = True
+    if not changed_any:
         print("Keine neuen Dokumente.")
         report.append("Keine neuen Dokumente.")
-    elif args.dry_run:
-        for path, _ in todo:
-            block = document_block(path)
-            kind = block["source"]["type"]
-            size = len(block["source"]["data"])
-            print(f"würde verarbeiten: {path.name} ({kind}, {size:,} Zeichen)")
-        return 0
-    else:
-        import anthropic
-
-        client = anthropic.Anthropic()
-        for path, digest in todo:
-            print(f"→ {path.name}", flush=True)
-            # Eine geänderte Datei ersetzt die alte Fassung samt ihrer Karten.
-            old = by_file.get(path.name)
-            if old is None and digest in by_sha:
-                old = by_sha[digest]
-            try:
-                source, cards = process(path, digest, client, library)
-            except Exception as exc:  # pro Datei weitermachen, Fehler protokollieren
-                print(f"  Fehler: {exc}", file=sys.stderr)
-                report.append(f"- ❌ **{path.name}**: {exc}")
-                if old is None:
-                    library["sources"].append({
-                        "id": digest[:10], "file": path.name, "sha256": digest,
-                        "added": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
-                        "status": "fehler", "error": str(exc), "title": path.stem, "card_count": 0,
-                    })
-                    changed = True
-                continue
-            if old is not None:
-                library["sources"] = [s for s in library["sources"] if s["id"] != old["id"]]
-                library["cards"] = [c for c in library["cards"] if c["source"] != old["id"]]
-            library["sources"].append(source)
-            library["cards"].extend(cards)
-            changed = True
-            print(f"  {len(cards)} Karten: {source['title']}")
-            report.append(f"- ✅ **{source['title'] or path.name}**: {len(cards)} Karten")
-
-    if changed:
-        save_library(library)
     write_summary(report)
     return 0
 
