@@ -72,7 +72,7 @@ SCHEMA = {
                 "type": "object",
                 "additionalProperties": False,
                 "required": [
-                    "type", "topic", "front", "back", "explanation",
+                    "type", "topic", "front", "back", "explanation", "tipp",
                     "quote", "location", "attribution", "tags", "importance",
                 ],
                 "properties": {
@@ -81,6 +81,7 @@ SCHEMA = {
                     "front": {"type": "string"},
                     "back": {"type": "string"},
                     "explanation": {"type": "string"},
+                    "tipp": {"type": "string"},
                     "quote": {"type": "string"},
                     "location": {"type": "string"},
                     "attribution": {"type": "string"},
@@ -105,6 +106,9 @@ Formulierung oder einen Fachbegriff, den man sauber erklären können sollte.
 konkret nach dem Inhalt fragen) und lässt genau eine sinnvolle Antwort zu.
 - Die Rückseite ist kurz: ein bis zwei Sätze oder eine Zahl mit Bezugsgröße. Hintergrund, \
 Einordnung oder Einschränkungen kommen in "explanation".
+- "tipp" ist ein Debatten-Tipp in einem Satz: wie man die Karte in einer Diskussion einsetzt, \
+worauf man achten sollte oder welcher Einwand zu erwarten ist. Nur wenn es einen echten Mehrwert \
+gibt, sonst leer.
 - Bei Argumenten fragt die Vorderseite nach der Begründung oder dem Gegenargument zu einer \
 Position; die Rückseite nennt den Kern in eigenen Worten.
 - Zahlen immer mit Einheit, Bezugsjahr und Bezugsgröße, so wie im Dokument angegeben.

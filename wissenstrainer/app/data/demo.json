@@ -37,7 +37,8 @@
    "location": "Abschnitt 1",
    "attribution": "",
    "tags": [],
-   "importance": 3
+   "importance": 3,
+   "tipp": ""
   },
   {
    "id": "demo-01",
@@ -52,7 +53,8 @@
    "location": "Abschnitt 1",
    "attribution": "",
    "tags": [],
-   "importance": 3
+   "importance": 3,
+   "tipp": "Wer sich auf die 0,35 % beruft, sollte dazusagen, dass Konjunktureffekte herausgerechnet werden – sonst wirkt die Regel strenger, als sie ist."
   },
   {
    "id": "demo-02",
@@ -67,7 +69,8 @@
    "location": "Art. 109 Abs. 3 GG",
    "attribution": "",
    "tags": [],
-   "importance": 2
+   "importance": 2,
+   "tipp": ""
   },
   {
    "id": "demo-03",
@@ -82,7 +85,8 @@
    "location": "Abschnitt 2",
    "attribution": "",
    "tags": [],
-   "importance": 2
+   "importance": 2,
+   "tipp": ""
   },
   {
    "id": "demo-04",
@@ -97,7 +101,8 @@
    "location": "Art. 115 Abs. 2 GG",
    "attribution": "",
    "tags": [],
-   "importance": 3
+   "importance": 3,
+   "tipp": ""
   },
   {
    "id": "demo-05",
@@ -112,7 +117,8 @@
    "location": "Abschnitt 3",
    "attribution": "",
    "tags": [],
-   "importance": 2
+   "importance": 2,
+   "tipp": ""
   },
   {
    "id": "demo-06",
@@ -127,7 +133,8 @@
    "location": "Abschnitt 3",
    "attribution": "",
    "tags": [],
-   "importance": 3
+   "importance": 3,
+   "tipp": "Das Urteil wird oft als Verbot von Investitionen zitiert. Präziser: Es verbietet, Notlagenkredite für andere Zwecke umzuwidmen."
   },
   {
    "id": "demo-07",
@@ -142,7 +149,8 @@
    "location": "Abschnitt 4",
    "attribution": "",
    "tags": [],
-   "importance": 3
+   "importance": 3,
+   "tipp": ""
   },
   {
    "id": "demo-08",
@@ -157,7 +165,9 @@
    "location": "Abschnitt 5",
    "attribution": "Befürworter:innen",
    "tags": [],
-   "importance": 3
+   "importance": 3,
+   "tipp": "",
+   "demo_new": true
   },
   {
    "id": "demo-09",
@@ -172,7 +182,9 @@
    "location": "Abschnitt 5",
    "attribution": "Kritiker:innen",
    "tags": [],
-   "importance": 3
+   "importance": 3,
+   "tipp": "Konkrete Beispiele aus der eigenen Kommune wirken hier stärker als abstrakte Zahlen.",
+   "demo_new": true
   },
   {
    "id": "demo-10",
@@ -187,7 +199,9 @@
    "location": "Abschnitt 6",
    "attribution": "",
    "tags": [],
-   "importance": 2
+   "importance": 2,
+   "tipp": "Rechne mit dem Einwand, dass sich fast jede Ausgabe als „Investition“ etikettieren lässt – eine klare Definition hilft.",
+   "demo_new": true
   }
  ]
 }

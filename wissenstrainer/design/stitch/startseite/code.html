@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+
+<html lang="de"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300..900;1,300..900&amp;family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = { 
+  darkMode: "class", 
+  theme: { 
+    extend: { 
+      colors: { 
+        "parchment": "#faecd0",
+        "parchment-warm": "#fcf3de",
+        "parchment-border": "#e8d8b6",
+        "parchment-divider": "#e0cfab",
+        "forest": "#2b5948",
+        "forest-light": "#dceae2",
+        "forest-dark": "#23493b",
+        "cypress": "#2e6350",
+        "cypress-light": "#deece4",
+        "cognac": "#C87018",
+        "cognac-light": "#faeedd",
+        "amber-gold": "#D97706",
+        "amber-gold-light": "#FEF3C7",
+        "slate-deep": "#192231",
+        "slate-accent": "#2B3A4F",
+        "slate-tint": "#E8EFF7",
+        "ink": "#181410",
+        "ink-muted": "#696155",
+        "ink-subtle": "#8F8576",
+        "surface": "#faecd0", 
+        "surface-card": "#fffaf0", 
+        "surface-container": "#f1dfb8", 
+        "primary": "#181410", 
+        "on-primary": "#fcf3de", 
+        "secondary": "#2b5948", 
+        "error-container": "#FDEAE8", 
+        "on-error-container": "#9E2317" 
+      }, 
+      borderRadius: { 
+        "DEFAULT": "0.125rem", 
+        "lg": "0.25rem", 
+        "xl": "0.5rem", 
+        "full": "0.75rem" 
+      }, 
+      spacing: { 
+        "space-xl": "2.5rem", 
+        "gutter-mobile": "0.75rem", 
+        "space-lg": "1.5rem", 
+        "space-sm": "0.5rem", 
+        "margin-mobile": "1.25rem", 
+        "gutter": "1rem", 
+        "space-xs": "0.25rem", 
+        "margin": "1.5rem", 
+        "space-md": "1rem" 
+      }, 
+      fontFamily: { 
+        "serif": ["Newsreader", "Georgia", "serif"],
+        "sans": ["Hanken Grotesk", "-apple-system", "sans-serif"]
+      }
+    } 
+  } 
+}</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+      background-color: #faecd0;
+    }
+
+    /* Keyframes & Animations */
+    @keyframes fadeInUp {
+      0% {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .reveal-item {
+      opacity: 0;
+      animation: fadeInUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Stagger delays */
+    .delay-1 { animation-delay: 0.05s; }
+    .delay-2 { animation-delay: 0.12s; }
+    .delay-3 { animation-delay: 0.20s; }
+    .delay-4 { animation-delay: 0.28s; }
+    .delay-5 { animation-delay: 0.36s; }
+    .delay-6 { animation-delay: 0.44s; }
+    .delay-7 { animation-delay: 0.52s; }
+    .delay-8 { animation-delay: 0.60s; }
+    .delay-9 { animation-delay: 0.68s; }
+
+    /* Radar ripple for SRS dot */
+    @keyframes radarPing {
+      0% {
+        transform: scale(0.9);
+        opacity: 0.8;
+      }
+      70% {
+        transform: scale(2.4);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(2.4);
+        opacity: 0;
+      }
+    }
+    .radar-pulse::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 9999px;
+      background-color: #2b5948;
+      animation: radarPing 2.4s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+      z-index: 0;
+    }
+
+    /* Breathing / pulse aura on circle 24 */
+    @keyframes subtlePulseRing {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(199, 112, 24, 0.0), 0 2px 6px rgba(20, 17, 14, 0.03);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 0 6px rgba(199, 112, 24, 0.08), 0 4px 12px rgba(20, 17, 14, 0.06);
+        transform: scale(1.02);
+      }
+    }
+    .breathing-circle {
+      animation: subtlePulseRing 4s ease-in-out infinite;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .breathing-circle:hover, .breathing-circle:active {
+      transform: scale(1.04);
+      box-shadow: 0 0 0 8px rgba(199, 112, 24, 0.12), 0 6px 16px rgba(20, 17, 14, 0.08);
+    }
+
+    /* Streak heute gentle glow */
+    @keyframes gentleGlow {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(200, 112, 24, 0.2);
+        border-color: rgba(200, 112, 24, 0.45);
+      }
+      50% {
+        box-shadow: 0 0 10px 2px rgba(200, 112, 24, 0.25);
+        border-color: rgba(200, 112, 24, 0.85);
+      }
+    }
+    .pulse-streak-today {
+      animation: gentleGlow 2.8s ease-in-out infinite;
+    }
+
+    /* Day chip tap feedback */
+    .day-pill-btn {
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .day-pill-btn:active {
+      transform: scale(0.90);
+    }
+
+    /* Shimmer effect across CTA button */
+    @keyframes shimmerMove {
+      0% {
+        transform: translateX(-120%) skewX(-20deg);
+      }
+      100% {
+        transform: translateX(220%) skewX(-20deg);
+      }
+    }
+    .btn-shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-shimmer::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: 0;
+      width: 45%;
+      height: 200%;
+      background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.14) 50%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      animation: shimmerMove 4.5s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    /* Topic Deck Cards interaction */
+    .deck-card {
+      transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.15s ease;
+      cursor: pointer;
+    }
+    .deck-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px -3px rgba(24, 20, 16, 0.08), 0 2px 6px -1px rgba(24, 20, 16, 0.04);
+    }
+    .deck-card:active {
+      transform: translateY(0);
+      background-color: #f7eed7;
+    }
+    .deck-card .arrow-shift {
+      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .deck-card:hover .arrow-shift {
+      transform: translateX(3px);
+    }
+
+    /* Smooth Filter transition */
+    .deck-filter {
+      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .deck-filter:active {
+      transform: scale(0.96);
+    }
+
+    /* Smooth animated progress bars */
+    .anim-bar {
+      width: 0%;
+      transition: width 1.1s cubic-bezier(0.2, 0.85, 0.25, 1);
+    }
+
+    /* Bottom tab interaction */
+    .nav-tab-item {
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.18s ease;
+    }
+    .nav-tab-item:active {
+      transform: scale(0.92);
+    }
+
+    /* Prefers-reduced-motion accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal-item {
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+      }
+      .breathing-circle,
+      .radar-pulse::after,
+      .pulse-streak-today,
+      .btn-shimmer::before {
+        animation: none !important;
+      }
+      .deck-card,
+      .deck-card:hover,
+      .anim-bar,
+      .day-pill-btn,
+      .nav-tab-item {
+        transition: none !important;
+        transform: none !important;
+      }
+    }
+  </style></head><body class="font-sans text-ink flex flex-col min-h-screen selection:bg-cognac-light selection:text-cognac bg-[#faecd0]"><header class="fixed top-0 inset-x-0 z-50 bg-[#faecd0]/95 backdrop-blur-md border-b border-parchment-border pt-safe transition-colors"><div class="h-14 px-margin-mobile flex items-center justify-between"><div class="flex items-center gap-2"><span class="font-serif italic font-medium text-[26px] tracking-tight text-ink">Wissenstrainer</span><span class="text-[10px] uppercase font-sans font-bold tracking-[0.2em] text-ink-muted border-l border-parchment-border pl-2 hidden min-[360px]:inline-block">Dossier</span></div><div class="flex items-center gap-space-sm"><div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f1dfb8] border border-parchment-border transition-transform active:scale-95 cursor-pointer"><span class="material-symbols-outlined text-[#C87018] text-[17px]" style="font-variation-settings: 'FILL' 1;">local_fire_department</span><span class="font-sans text-[11px] font-bold tracking-wider text-ink">14</span></div><a class="w-8 h-8 rounded-full bg-slate-deep flex items-center justify-center shrink-0 border border-slate-accent active:scale-90 transition-transform" data-path="mehr" href="#"><span class="material-symbols-outlined text-[#fcf3de] text-[18px]">person</span></a></div></div></header><main class="flex-1 flex flex-col relative w-full pt-14 pb-24 bg-[#faecd0]"><div class="flex flex-col w-full px-margin-mobile pb-8 space-y-6">
+<!-- Magazine Editorial Header -->
+<header class="reveal-item delay-1 flex flex-col mt-4 pt-1 border-b border-parchment-divider pb-4 space-y-1.5">
+<div class="flex items-center justify-between text-ink-muted">
+<div class="flex items-center gap-2">
+<span class="font-sans text-[10px] font-bold uppercase tracking-[0.18em]">Ausgabe • 24. Mai</span>
+<span class="w-1 h-1 rounded-full bg-parchment-border"></span>
+<span class="font-sans text-[10px] font-medium tracking-wide">Nr. 142</span>
+</div>
+<span class="inline-flex items-center gap-1.5 font-sans text-[10.5px] font-medium text-[#2b5948]">
+<span class="relative flex items-center justify-center w-2.5 h-2.5">
+<span class="radar-pulse relative w-2 h-2 rounded-full bg-[#2b5948]"></span>
+</span>
+        SRS Synchronisiert
+      </span>
+</div>
+<h1 class="font-serif text-[38px] leading-[42px] font-normal text-ink tracking-tight pt-1">
+      Guten Tag, Alex.
+    </h1>
+<p class="font-serif italic text-[20px] text-ink-muted leading-snug">
+      Bereit für die nächste Debatte?
+    </p>
+</header>
+<!-- Editorial Magazine Hero Feature -->
+<section class="reveal-item delay-2 relative w-full rounded-2xl overflow-hidden shadow-sm border border-parchment-border bg-slate-deep transition-all duration-300 hover:shadow-md cursor-pointer group">
+<div class="relative w-full h-56 bg-cover bg-center transition-transform duration-700 ease-out group-hover:scale-[1.02]" data-alt="A refined minimalist editorial photograph of classic debater leather-bound journals, brass drafting pens, and printed policy briefings on an ash wood library table in soft natural daylight, calm intellectual atmosphere." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAr_e-oSmn1RKC9VsZKvym1KZyw054l2AoNHgXjXmBa5wZPqk4pjQgFA9cHew-YZ8KcBUodp-9GA8AKZE7NQj5vx8i5F8mlYNn4oTWDPsuu0NpZhbofFm73Y6zT1XqTczBRkhEFZ9dr8vU3i6c45zB0Ezf3DKSKGhB9DmPn9mmeQDCeJLuXkZuzrQAqHF5BO6EMqrnZqxmft5G-tDNqxngkRsB7uonAs8gCk4EtPj5G0zzjfqNZBsLTnA')">
+<div class="absolute inset-0 bg-gradient-to-t from-slate-deep via-slate-deep/70 to-slate-deep/20"></div>
+<div class="absolute inset-0 p-5 flex flex-col justify-end">
+<div class="space-y-1.5">
+<div class="inline-flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-amber-400 text-slate-deep font-sans text-[10px] font-bold uppercase tracking-[0.14em] shadow-xs">Leitthema des Tages</span>
+<span class="text-[11px] font-sans text-amber-200/90 tracking-wide">Hauptdossier</span>
+</div>
+<h2 class="font-serif text-[24px] leading-[28px] text-[#fcf3de] font-normal transition-colors group-hover:text-amber-100">
+            Parlamentarische Praxis &amp; Haushaltsrecht
+          </h2>
+<p class="font-sans text-[12.5px] text-slate-200/90 line-clamp-2 leading-relaxed">
+            Kernargumente, Etatrechte und das Prüfverfahren des Bundesverfassungsgerichts.
+          </p>
+</div>
+</div>
+</div>
+</section>
+<!-- Offenes Dashboard-Layout: Wissensabruf & Tagesziel (Non-Boxed) -->
+<section class="reveal-item delay-3 pt-1 pb-2 border-b border-parchment-divider">
+<div class="flex items-baseline justify-between mb-4">
+<div>
+<span class="font-sans text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-muted">Tagesabruf</span>
+<h2 class="font-serif text-[24px] font-normal text-ink leading-tight">Status &amp; Repetition</h2>
+</div>
+<span class="font-sans text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-muted">Heute fällig</span>
+</div>
+<!-- Horizontales Dashboard: Perfekter feiner Kreis + Metriken -->
+<div class="grid grid-cols-12 gap-4 items-center bg-[#fffaf0] rounded-xl p-4 border border-parchment-border shadow-xs"><div class="col-span-5 border-r border-parchment-divider pr-2 flex items-center justify-center"><div class="breathing-circle w-24 h-24 rounded-full border border-amber-900/15 bg-[#faecd0]/45 flex items-center justify-center shadow-xs cursor-pointer select-none active:scale-95"><span class="font-serif text-[48px] leading-none font-normal text-ink tracking-tight"><span style="color: rgb(20, 17, 14); letter-spacing: -1.2px; background-color: rgba(252, 243, 222, 0.7);">24</span></span></div></div><div class="col-span-7 flex flex-col justify-center space-y-2 pl-2"><div class="flex items-baseline justify-between"><span class="font-sans text-[11.5px] uppercase tracking-wider font-semibold text-ink-muted">Absolviert</span><span class="font-serif text-[28px] font-medium leading-none text-[#2b5948]" id="main-percent-text">80%</span></div><div class="w-full bg-[#e8d8b6] rounded-full h-2 overflow-hidden"><div class="anim-bar bg-[#2b5948] h-full rounded-full" data-target-width="80%" style="width: 0%"></div></div><p class="font-sans text-[12px] text-ink-muted leading-tight">6 von 30 Karten verinnerlicht.</p></div></div>
+<!-- Primary CTA Button (Sanfteres Eukalyptus-/Lorbeergruen mit warmem Bernstein-Akzent) -->
+<div class="mt-3.5">
+<button class="btn-shimmer w-full py-3.5 px-4 rounded-xl bg-[#2b5948] hover:bg-[#23493b] text-[#fcf3de] flex items-center justify-between shadow-sm active:scale-[0.98] transition-transform duration-150 border border-[#2b5948] group" id="cta-start-study">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[20px] text-amber-300 transition-transform duration-300 group-hover:rotate-12">play_circle</span>
+<span class="font-sans text-[14px] font-semibold tracking-wide">Lernen starten</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-sans text-[11px] font-bold bg-[#fcf3de]/20 text-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200/30">24 Karten fällig</span>
+<span class="material-symbols-outlined text-[18px] transition-transform duration-200 group-hover:translate-x-1">arrow_forward</span>
+</div>
+</button>
+</div>
+</section>
+<!-- Kontinuität / Lernserie (Harmonisierte Zwischenüberschrift & weiches Kräutergrün) -->
+<section class="reveal-item delay-4 space-y-3 pt-1">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-sans text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-muted block mb-0.5">Disziplin</span>
+<h2 class="font-serif text-[24px] font-normal text-ink leading-tight flex items-center gap-2">
+<span class="w-6 h-6 rounded-full bg-cognac-light flex items-center justify-center border border-cognac/30 shrink-0">
+<span class="material-symbols-outlined text-[#C87018] text-[15px]" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+</span>
+14 Tage Lernserie
+</h2>
+</div>
+<span class="font-sans text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-cypress-light text-[#2b5948] border border-[#2b5948]/25 shadow-2xs">Aktiv</span>
+</div>
+<!-- Weekly Pill Dots (Mo - So) -->
+<div class="grid grid-cols-7 gap-2 bg-[#fffaf0] p-3 rounded-xl border border-parchment-border shadow-xs">
+<div class="flex flex-col items-center space-y-1">
+<span class="font-sans text-[10px] font-semibold text-ink-muted">Mo</span>
+<button class="day-pill-btn w-8 h-8 rounded-full bg-[#2b5948] text-[#fcf3de] flex items-center justify-center shadow-xs cursor-pointer" type="button">
+<span class="material-symbols-outlined text-[15px]">check</span>
+</button>
+</div>
+<div class="flex flex-col items-center space-y-1">
+<span class="font-sans text-[10px] font-semibold text-ink-muted">Di</span>
+<button class="day-pill-btn w-8 h-8 rounded-full bg-[#2b5948] text-[#fcf3de] flex items-center justify-center shadow-xs cursor-pointer" type="button">
+<span class="material-symbols-outlined text-[15px]">check</span>
+</button>
+</div>
+<div class="flex flex-col items-center space-y-1">
+<span class="font-sans text-[10px] font-semibold text-ink-muted">Mi</span>
+<button class="day-pill-btn w-8 h-8 rounded-full bg-[#2b5948] text-[#fcf3de] flex items-center justify-center shadow-xs cursor-pointer" type="button">
+<span class="material-symbols-outlined text-[15px]">check</span>
+</button>
+</div>
+<div class="flex flex-col items-center space-y-1">
+<span class="font-sans text-[10px] font-semibold text-ink-muted">Do</span>
+<button class="day-pill-btn w-8 h-8 rounded-full bg-[#2b5948] text-[#fcf3de] flex items-center justify-center shadow-xs cursor-pointer" type="button">
+<span class="material-symbols-outlined text-[15px]">check</span>
+</button>
+</div>
+<div class="flex flex-col items-center space-y-1">
+<span class="font-sans text-[10px] font-semibold text-ink-muted">Fr</span>
+<button class="day-pill-btn w-8 h-8 rounded-full bg-[#2b5948] text-[#fcf3de] flex items-center justify-center shadow-xs cursor-pointer" type="button">
+<span class="material-symbols-outlined text-[15px]">check</span>
+</button>
+</div>
+<div class="flex flex-col items-center space-y-1">
+<span class="font-sans text-[10px] font-bold text-[#C87018]">Sa</span>
+<button class="day-pill-btn pulse-streak-today w-8 h-8 rounded-full bg-cognac-light border border-[#C87018]/50 text-[#C87018] flex items-center justify-center font-bold cursor-pointer" type="button">
+<span class="font-sans text-[10px]">Heute</span>
+</button>
+</div>
+<div class="flex flex-col items-center space-y-1">
+<span class="font-sans text-[10px] font-semibold text-ink-muted">So</span>
+<button class="day-pill-btn w-8 h-8 rounded-full bg-[#f1dfb8] text-ink-muted/50 flex items-center justify-center border border-parchment-border cursor-pointer" type="button">
+<span class="material-symbols-outlined text-[13px]">lock</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Dossier-Katalog / Inhaltsverzeichnis (Harmonisierte Überschrift) -->
+<section class="reveal-item delay-5 space-y-3.5 pt-2">
+<div class="flex items-baseline justify-between border-b border-parchment-divider pb-2"><div><span class="font-sans text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-muted block mb-0.5">Katalog</span><h2 class="font-serif text-[24px] font-normal leading-tight text-ink">Themen-Pakete</h2></div></div>
+<!-- Filter Chips Horizontal Scroller -->
+<div class="flex items-center gap-2 overflow-x-auto pb-1" id="filter-container">
+<button class="deck-filter shrink-0 px-3.5 py-1 rounded-full bg-slate-deep text-[#fcf3de] font-sans text-[11.5px] font-bold tracking-wide shadow-sm" data-filter="all">Alle Dossiers</button>
+<button class="deck-filter shrink-0 px-3.5 py-1 rounded-full bg-[#fffaf0] text-ink font-sans text-[11.5px] font-semibold border border-parchment-border hover:bg-[#f1dfb8]" data-filter="politik">Politik</button>
+<button class="deck-filter shrink-0 px-3.5 py-1 rounded-full bg-[#fffaf0] text-ink font-sans text-[11.5px] font-semibold border border-parchment-border hover:bg-[#f1dfb8]" data-filter="wirtschaft">Wirtschaft</button>
+<button class="deck-filter shrink-0 px-3.5 py-1 rounded-full bg-[#fffaf0] text-ink font-sans text-[11.5px] font-semibold border border-parchment-border hover:bg-[#f1dfb8]" data-filter="recht">Recht</button>
+</div>
+<!-- Deck List (Inhaltsverzeichnis-Dossier-Look) -->
+<div class="flex flex-col space-y-3.5" id="deck-list">
+<article class="deck-card reveal-item delay-6 relative p-4 pl-4 border-l-4 border-l-[#C87018] bg-[#fffaf0] rounded-xl border border-parchment-border shadow-xs" data-category="wirtschaft politik"><div class="flex items-start gap-3.5"><div class="flex flex-col items-center shrink-0 pt-0.5"><span class="font-serif text-[22px] font-light text-ink-muted leading-none">01</span><span class="mt-2 px-1 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-cognac-light text-[#C87018] border border-[#C87018]/25">Wirt.</span></div><div class="flex-1 min-w-0 space-y-2.5"><div class="flex items-start justify-between gap-3"><div><h3 class="font-serif text-[19px] leading-snug text-ink font-medium">Schuldenbremse &amp; Finanzpolitik</h3><div class="flex items-center gap-2 mt-1.5"><span class="shrink-0 px-2 py-0.5 rounded-full bg-error-container border border-red-200 text-on-error-container font-sans text-[10px] font-bold">Heute 6 fällig</span><span class="px-1.5 py-0.5 rounded text-[9.5px] font-medium bg-[#f1dfb8] text-ink-muted">Öffentlich</span></div></div><img alt="Bundestag Kuppel und Finanzdossier" class="w-20 h-20 rounded-xl object-cover border border-parchment-border shadow-xs shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLg1TLHQFXceE3EwX44HrpXa3o8dwvpo26w12Bi7ROXzPvuorN8lJeePxla041fbufKQtsQ9oI4JgWXROryCXHl-uK3-SotJl6cLhvqzbwEdjQL2NPsg-D-FOHYEgsiEhDKvs2YoD1Q_NQEvZ5u4XPvHkeXQ1p253GdlMBvVWR9q7qJSi2Mcn36jLQ5Td3ZZhMfGIJQhynbDHYWlohP3QumuVt0c7jQ-mm9Nqy-rxdaNl0vkM6ItQbUg"/></div><div class="space-y-1.5 pt-0.5"><div class="flex items-center justify-between text-[11.5px]"><span class="font-bold text-[#2b5948] font-sans">85% von 42</span><span class="arrow-shift material-symbols-outlined text-[16px] text-ink-muted">arrow_forward</span></div><div class="w-full bg-[#e8d8b6] rounded-full h-1.5 overflow-hidden"><div class="anim-bar bg-[#2b5948] h-full rounded-full" data-target-width="85%" style="width: 0%"></div></div></div></div></div></article>
+<article class="deck-card reveal-item delay-7 relative p-4 pl-4 border-l-4 border-l-slate-accent bg-[#fffaf0] rounded-xl border border-parchment-border shadow-xs" data-category="politik"><div class="flex items-start gap-3.5"><div class="flex flex-col items-center shrink-0 pt-0.5"><span class="font-serif text-[22px] font-light text-ink-muted leading-none">02</span><span class="mt-2 px-1 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-slate-tint text-slate-deep border border-slate-accent/20">Stadt</span></div><div class="flex-1 min-w-0 space-y-2.5"><div class="flex items-start justify-between gap-3"><div><h3 class="font-serif text-[19px] leading-snug text-ink font-medium">Wohnungspolitik &amp; Mietspiegel</h3><div class="flex items-center gap-2 mt-1.5"><span class="shrink-0 px-2 py-0.5 rounded-full bg-error-container border border-red-200 text-on-error-container font-sans text-[10px] font-bold">Heute 8 fällig</span><span class="px-1.5 py-0.5 rounded text-[9.5px] font-medium bg-[#f1dfb8] text-ink-muted">Privat</span></div></div><img alt="Moderne urbane Wohnbebauung Architektur" class="w-20 h-20 rounded-xl object-cover border border-parchment-border shadow-xs shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiZmRbudUfR4UTlpNJENL-4Y-RXCPOaOpzEoEvul1FlqxwFocYzajKkg2UF0C3I8nPGxMUZXpZ7XDO1Cnxs77sIgPcWKXZA5bYtsaFaXdFR9R0Ay7ps7-gA7LqJE0kTIXwHFpxJTPQj1xIHAH2wa1XBMi3ifnEmbcApcg-cxRvY-EicEaHsv4nxuZBR4BowQ9Fjw2UGk9ioa-NZfJmF15M4snM24d9YPE0qzVrHxHcKuouhjZiUUzF0w"/></div><div class="space-y-1.5 pt-0.5"><div class="flex items-center justify-between text-[11.5px]"><span class="font-bold text-ink font-sans">60% von 28</span><span class="arrow-shift material-symbols-outlined text-[16px] text-ink-muted">arrow_forward</span></div><div class="w-full bg-[#e8d8b6] rounded-full h-1.5 overflow-hidden"><div class="anim-bar bg-slate-accent h-full rounded-full" data-target-width="60%" style="width: 0%"></div></div></div></div></div></article>
+<article class="deck-card reveal-item delay-8 relative p-4 pl-4 border-l-4 border-l-[#D97706] bg-[#fffaf0] rounded-xl border border-parchment-border shadow-xs" data-category="wirtschaft politik"><div class="flex items-start gap-3.5"><div class="flex flex-col items-center shrink-0 pt-0.5"><span class="font-serif text-[22px] font-light text-ink-muted leading-none">03</span><span class="mt-2 px-1 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-gold-light text-[#D97706] border border-[#D97706]/25">Infra.</span></div><div class="flex-1 min-w-0 space-y-2.5"><div class="flex items-start justify-between gap-3"><div><h3 class="font-serif text-[19px] leading-snug text-ink font-medium">Energiewende &amp; Strommarkt</h3><div class="flex items-center gap-2 mt-1.5"><span class="shrink-0 px-2 py-0.5 rounded-full bg-error-container border border-red-200 text-on-error-container font-sans text-[10px] font-bold">Heute 10 fällig</span><span class="px-1.5 py-0.5 rounded text-[9.5px] font-medium bg-[#f1dfb8] text-ink-muted">Öffentlich</span></div></div><img alt="Erneuerbare Energien Windkraft und Stromtrassen" class="w-20 h-20 rounded-xl object-cover border border-parchment-border shadow-xs shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjEYz45siKobzTqU-tRK0yUGT77UyMduja90nXEGTuM6P0e6rs6iEWHTKQz5UIJjNu-qLadKq1I8SkLB5ZY_METdo2XPvNm4pb5r98ZM5f7zgeNLDugVAW9SqFdYT66jlR6IflJOLJbdeDcnGRcXjzBs_nrAca5gbbdvqfW1SfeA7KNbHzg2i8N8Pix7ZzoBENoNA7pfbtB0F4d0j2glxZQA4gQGgSXBFf6BWHYQBcfIKFlxJCFHYp6g"/></div><div class="space-y-1.5 pt-0.5"><div class="flex items-center justify-between text-[11.5px]"><span class="font-bold text-ink font-sans">35% von 54</span><span class="arrow-shift material-symbols-outlined text-[16px] text-ink-muted">arrow_forward</span></div><div class="w-full bg-[#e8d8b6] rounded-full h-1.5 overflow-hidden"><div class="anim-bar bg-[#2b5948] h-full rounded-full" data-target-width="35%" style="width: 0%"></div></div></div></div></div></article>
+<article class="deck-card reveal-item delay-9 relative p-4 pl-4 border-l-4 border-l-[#2b5948] bg-[#fffaf0] rounded-xl border border-parchment-border shadow-xs" data-category="recht politik"><div class="flex items-start gap-3.5"><div class="flex flex-col items-center shrink-0 pt-0.5"><span class="font-serif text-[22px] font-light text-ink-muted leading-none">04</span><span class="mt-2 px-1 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-cypress-light text-[#2b5948] border border-[#2b5948]/25">Recht</span></div><div class="flex-1 min-w-0 space-y-2.5"><div class="flex items-start justify-between gap-3"><div><h3 class="font-serif text-[19px] leading-snug text-ink font-medium">Klimaschutzgesetz Urteile</h3><div class="flex items-center gap-2 mt-1.5"><span class="shrink-0 px-2.5 py-0.5 rounded-full bg-cypress-light text-[#2b5948] border border-[#2b5948]/25 font-sans text-[10px] font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-[#2b5948]">verified</span>Gelernt</span><span class="px-1.5 py-0.5 rounded text-[9.5px] font-medium bg-[#f1dfb8] text-ink-muted">Privat</span></div></div><img alt="Justitia und Rechtsprechung Bundesverfassungsgericht" class="w-20 h-20 rounded-xl object-cover border border-parchment-border shadow-xs shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA63hx7ZHMYiNKdl4l_xoUm0wtWbQKVjQuVN2RnrUa18q39v2WMGysrrbjRoiZM1ryGmaaLHUExbPv67wJ9nyy8rDW5ODZwZrLItkdhVF554PvdhdufQmSJYSry6rjLoOsaOPxqwtwGhDle_-_onebIJugkwWMmc9iH7daMemqHXIXf0gkWNiFcOwoQ0wgkoKONGm19wI2avViTbyDGIUBB25lYvudUkZNIJOQ8EDJIldmsWkUKZIlqGQ"/></div><div class="space-y-1.5 pt-0.5"><div class="flex items-center justify-between text-[11.5px]"><span class="font-bold text-[#2b5948] font-sans">90% von 19</span><span class="arrow-shift material-symbols-outlined text-[16px] text-[#2b5948]">arrow_forward</span></div><div class="w-full bg-[#e8d8b6] rounded-full h-1.5 overflow-hidden"><div class="anim-bar bg-[#2b5948] h-full rounded-full" data-target-width="90%" style="width: 0%"></div></div></div></div></div></article>
+</div>
+</section>
+<!-- Typografisch gefeiertes Zitat des Tages (Hannah Arendt) -->
+<aside class="reveal-item delay-9 relative bg-gradient-to-br from-slate-deep to-[#0F1622] text-[#fcf3de] rounded-2xl p-6 shadow-md border border-slate-accent overflow-hidden group cursor-pointer transition-transform duration-200 active:scale-[0.99]">
+<div class="absolute -top-3 -left-1 font-serif text-[84px] leading-none text-slate-700/35 select-none pointer-events-none transition-transform duration-500 group-hover:scale-105">“</div>
+<div class="relative space-y-3 z-10">
+<div class="flex items-center gap-2">
+<span class="w-5 h-[1px] bg-amber-400"></span>
+<span class="font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Diskurs &amp; Zitat des Tages</span>
+</div>
+<blockquote class="font-serif italic text-[21px] leading-[30px] text-[#fcf3de] font-normal pt-1">
+      „Wer die Fakten nicht auf seiner Seite hat, flieht gewöhnlich in die Emotion.“
+    </blockquote>
+<div class="pt-2 flex items-center justify-between border-t border-slate-700/60 font-sans text-[12px]">
+<div class="text-slate-300">
+<span class="font-medium text-slate-200">Hannah Arendt</span>
+<span class="text-slate-400 text-[11px] block">Briefing-Archiv zur Urteilskraft</span>
+</div>
+<button class="text-amber-300 font-semibold text-[11px] uppercase tracking-wider flex items-center gap-1 group-hover:underline">
+<span class="">Kontext</span>
+<span class="material-symbols-outlined text-[15px] transition-transform duration-200 group-hover:translate-x-1">arrow_right_alt</span>
+</button>
+</div>
+</div>
+</aside>
+</div>
+<script>
+  (function() {
+    // 1. Animated Progress Bars on load
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const animBars = document.querySelectorAll('.anim-bar');
+        animBars.forEach(bar => {
+          const target = bar.getAttribute('data-target-width');
+          if (target) {
+            bar.style.width = target;
+          }
+        });
+      }, 250);
+    });
+
+    // 2. Interactive Filter Pills with quick fade-in/fade-out
+    const filterButtons = document.querySelectorAll('.deck-filter');
+    const cards = document.querySelectorAll('.deck-card');
+
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => {
+          b.classList.remove('bg-slate-deep', 'text-[#fcf3de]', 'shadow-sm');
+          b.classList.add('bg-[#fffaf0]', 'text-ink', 'border', 'border-parchment-border');
+        });
+        btn.classList.remove('bg-[#fffaf0]', 'text-ink', 'border', 'border-parchment-border');
+        btn.classList.add('bg-slate-deep', 'text-[#fcf3de]', 'shadow-sm');
+
+        const filter = btn.getAttribute('data-filter');
+
+        cards.forEach((card, index) => {
+          const categories = card.getAttribute('data-category') || '';
+          const matches = filter === 'all' || categories.includes(filter);
+
+          if (matches) {
+            card.style.display = 'block';
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(8px)';
+            setTimeout(() => {
+              card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+              card.style.opacity = '1';
+              card.style.transform = 'translateY(0)';
+            }, index * 40);
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // 3. CTA Start Study micro-interaction
+    const ctaStart = document.getElementById('cta-start-study');
+    if (ctaStart) {
+      ctaStart.addEventListener('click', () => {
+        ctaStart.classList.add('scale-95');
+        setTimeout(() => {
+          ctaStart.classList.remove('scale-95');
+        }, 150);
+      });
+    }
+
+    // 4. Streak Days Interactive Micro-Bounce
+    const streakButtons = document.querySelectorAll('.day-pill-btn');
+    streakButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.add('scale-125');
+        setTimeout(() => {
+          btn.classList.remove('scale-125');
+        }, 200);
+      });
+    });
+
+    // 5. Bottom Navigation Tab Micro-Interaction
+    const navTabs = document.querySelectorAll('.nav-tab-item');
+    navTabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        e.preventDefault();
+        navTabs.forEach(t => {
+          t.classList.remove('text-[#2b5948]', 'font-bold');
+          t.classList.add('text-ink-muted');
+          const icon = t.querySelector('.material-symbols-outlined');
+          if (icon) {
+            icon.style.fontVariationSettings = "'FILL' 0";
+          }
+        });
+        tab.classList.remove('text-ink-muted');
+        tab.classList.add('text-[#2b5948]', 'font-bold');
+        const activeIcon = tab.querySelector('.material-symbols-outlined');
+        if (activeIcon) {
+          activeIcon.style.fontVariationSettings = "'FILL' 1";
+          activeIcon.style.transform = 'scale(1.15)';
+          setTimeout(() => {
+            activeIcon.style.transform = 'scale(1)';
+          }, 200);
+        }
+      });
+    });
+  })();
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-[#faecd0]/95 backdrop-blur-md border-t border-parchment-border shadow-[0_-2px_12px_rgba(20,17,14,0.04)]" data-active-classes="text-[#2b5948] font-bold"><div class="flex justify-around items-center h-16 px-gutter-mobile"><a aria-current="page" class="nav-tab-item flex flex-col items-center justify-center gap-1 min-w-[44px] min-h-[44px] px-3 py-1 text-[#2b5948] font-bold cursor-pointer" data-path="heute" href="#"><span class="material-symbols-outlined text-[22px] transition-transform duration-200" style="font-variation-settings: 'FILL' 1;">event_available</span><span class="font-sans text-[11px] leading-none">Heute</span></a><a class="nav-tab-item flex flex-col items-center justify-center gap-1 min-w-[44px] min-h-[44px] px-3 py-1 text-ink-muted hover:text-ink cursor-pointer" data-path="sichten" href="#"><span class="material-symbols-outlined text-[22px] transition-transform duration-200">view_carousel</span><span class="font-sans text-[11px] leading-none">Sichten</span></a><a class="nav-tab-item flex flex-col items-center justify-center gap-1 min-w-[44px] min-h-[44px] px-3 py-1 text-ink-muted hover:text-ink cursor-pointer" data-path="bibliothek" href="#"><span class="material-symbols-outlined text-[22px] transition-transform duration-200">folder_copy</span><span class="font-sans text-[11px] leading-none">Bibliothek</span></a><a class="nav-tab-item flex flex-col items-center justify-center gap-1 min-w-[44px] min-h-[44px] px-3 py-1 text-ink-muted hover:text-ink cursor-pointer" data-path="mehr" href="#"><span class="material-symbols-outlined text-[22px] transition-transform duration-200">more_horiz</span><span class="font-sans text-[11px] leading-none">Mehr</span></a></div></nav>
+</body></html>

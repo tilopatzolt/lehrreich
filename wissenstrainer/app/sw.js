@@ -1,5 +1,5 @@
 // App-Shell offline verfügbar machen. Bei Änderungen an der App VERSION erhöhen.
-const VERSION = "wt-3";
+const VERSION = "wt-4";
 const SHELL = [
   "./", "index.html", "styles.css", "app.js", "srs.js", "manifest.webmanifest",
   "data/demo.json", "icons/icon.svg", "icons/icon-192.png", "icons/icon-180.png",
