@@ -1,5 +1,5 @@
 // App-Shell offline verfügbar machen. Bei Änderungen an der App VERSION erhöhen.
-const VERSION = "wt-5";
+const VERSION = "wt-6";
 const SHELL = [
   "./", "index.html", "styles.css", "app.js", "srs.js", "manifest.webmanifest",
   "data/demo.json", "icons/icon.svg", "icons/icon-192.png", "icons/icon-180.png",
@@ -39,8 +39,10 @@ self.addEventListener("fetch", (e) => {
   if (url.origin !== location.origin) return;
 
   // App-Shell: Netz zuerst (damit Updates sofort ankommen), offline aus dem Cache
+  // „no-cache“: beim Server nachfragen, ob es eine neue Fassung gibt (GitHub Pages lässt Browser sonst 10 Minuten lang die alte nutzen)
+  const fresh = e.request.mode === "navigate" ? e.request : new Request(e.request, { cache: "no-cache" });
   e.respondWith(
-    fetch(e.request)
+    fetch(fresh)
       .then((res) => {
         if (res.ok) caches.open(VERSION).then((c) => c.put(e.request, res.clone()));
         return res;
