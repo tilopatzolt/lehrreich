@@ -145,7 +145,8 @@ function pkgStats(p) {
    ============================================================ */
 
 function gh(repo, path, opts = {}) {
-  return fetch(`https://api.github.com/repos/${repo}/${path}`, {
+  // ohne Pfad keinen Schrägstrich anhängen: …/repos/owner/name/ beantwortet GitHub mit 400
+  return fetch(`https://api.github.com/repos/${repo}${path ? `/${path}` : ""}`, {
     ...opts,
     headers: {
       Accept: "application/vnd.github+json",
@@ -1478,6 +1479,7 @@ function githubSheet() {
       try {
         for (const repo of [github.publicRepo, github.privateRepo].filter(Boolean)) {
           const res = await gh(repo, "");
+          if (res.status === 401) throw new Error("Schlüssel ungültig oder abgelaufen");
           if (!res.ok) throw new Error(`${repo}: ${res.status === 404 ? "nicht gefunden oder kein Zugriff" : `Fehler ${res.status}`}`);
           if (!(await res.json()).permissions?.push) throw new Error(`${repo}: Schlüssel darf dort nichts ablegen`);
         }
