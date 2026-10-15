@@ -4,6 +4,7 @@ import { schedule, preview, isDue, isMature, dayKey } from "./srs.js";
    Zustand
    ============================================================ */
 
+const APP_VERSION = "15.10.2026 b"; // bei jeder Änderung hochzählen, wird unter „Mehr“ angezeigt
 const STORE_KEY = "wt.v1";
 const TOKEN_KEY = "wt.github";
 const CACHE_KEY = "wt.pakete";
@@ -1414,7 +1415,7 @@ function renderSettings(view) {
       <div class="item"><div><b>Einspielen</b><small>Eine gesicherte Datei laden</small></div><label class="link">Laden<input type="file" accept="application/json,.json" data-import hidden></label></div>
       <div class="item"><div><b>Zurücksetzen</b><small>Löscht Fortschritt und Sichtung auf diesem Gerät</small></div><button class="link danger" data-reset>Zurücksetzen</button></div>
     </div>
-    <p class="faint" style="font-size:12.5px;text-align:center;margin-top:28px">Dein Lernstand wird nur auf diesem Gerät gespeichert.</p>
+    <p class="faint" style="font-size:12.5px;text-align:center;margin-top:28px">Dein Lernstand wird nur auf diesem Gerät gespeichert.<br>Version ${APP_VERSION}</p>
   `;
 
   $$("[data-step]", view).forEach((b) => b.onclick = () => {
@@ -1480,7 +1481,7 @@ function githubSheet() {
         for (const repo of [github.publicRepo, github.privateRepo].filter(Boolean)) {
           const res = await gh(repo, "");
           if (res.status === 401) throw new Error("Schlüssel ungültig oder abgelaufen");
-          if (!res.ok) throw new Error(`${repo}: ${res.status === 404 ? "nicht gefunden oder kein Zugriff" : `Fehler ${res.status}`}`);
+          if (!res.ok) throw new Error(`${repo}: ${res.status === 404 ? "nicht gefunden oder kein Zugriff" : "Fehler"} (Code ${res.status})`);
           if (!(await res.json()).permissions?.push) throw new Error(`${repo}: Schlüssel darf dort nichts ablegen`);
         }
         writeJSON(TOKEN_KEY, github);
