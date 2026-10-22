@@ -9,13 +9,14 @@ Aufruf (Standard ist die öffentliche Ablage dieses Repos):
     python wissenstrainer/pipeline/extract.py
     python wissenstrainer/pipeline/extract.py --dry-run   # nur anzeigen
     python wissenstrainer/pipeline/extract.py --prune     # Karten gelöschter Dateien entfernen
+    python wissenstrainer/pipeline/extract.py --rebuild   # alle Dokumente neu auswerten
     python extract.py --inbox privat --out karten --visibility privat   # private Ablage
 
 Umgebungsvariablen:
     ANTHROPIC_API_KEY   API-Schlüssel (Pflicht, außer bei --dry-run)
     WT_MODEL            Modell, Standard: claude-opus-5-5
     WT_EFFORT           low | medium | high | xhigh | max, Standard: high
-    WT_MAX_CARDS        grobe Obergrenze an Karten pro Dokument, Standard: 30
+    WT_MAX_CARDS        grobe Obergrenze an Karten pro Dokument, Standard: 45
 """
 
 from __future__ import annotations
@@ -38,7 +39,7 @@ LOOSE_PACKAGE = "Allgemein"
 
 MODEL = os.environ.get("WT_MODEL", "claude-opus-5-5")
 EFFORT = os.environ.get("WT_EFFORT", "high")
-MAX_CARDS = int(os.environ.get("WT_MAX_CARDS", "30"))
+MAX_CARDS = int(os.environ.get("WT_MAX_CARDS", "45"))
 
 PDF_INLINE_LIMIT = 30 * 1024 * 1024  # Anfragen dürfen max. 32 MB groß sein
 TEXT_TYPES = {".txt", ".md", ".markdown"}
@@ -55,7 +56,7 @@ SCHEMA = {
         "document": {
             "type": "object",
             "additionalProperties": False,
-            "required": ["title", "authors", "organisation", "published", "doc_type", "summary", "core_thesis"],
+            "required": ["title", "authors", "organisation", "published", "doc_type", "summary", "core_thesis", "image_query"],
             "properties": {
                 "title": {"type": "string"},
                 "authors": {"type": "string"},
@@ -64,6 +65,7 @@ SCHEMA = {
                 "doc_type": {"type": "string"},
                 "summary": {"type": "string"},
                 "core_thesis": {"type": "string"},
+                "image_query": {"type": "string"},
             },
         },
         "cards": {
@@ -104,8 +106,16 @@ einen überraschenden Fakt, ein Argument samt Begründung, ein anschauliches Bei
 Formulierung oder einen Fachbegriff, den man sauber erklären können sollte.
 - Die Vorderseite ist ohne das Dokument verständlich (nicht "Was sagt der Text über ...?", sondern \
 konkret nach dem Inhalt fragen) und lässt genau eine sinnvolle Antwort zu.
-- Die Rückseite ist kurz: ein bis zwei Sätze oder eine Zahl mit Bezugsgröße. Hintergrund, \
-Einordnung oder Einschränkungen kommen in "explanation".
+- Eine Karte, eine Information. Die Rückseite ist so kurz wie möglich: eine Zahl mit \
+Bezugsgröße, ein Begriff, ein Halbsatz oder höchstens ein kurzer Satz (Richtwert: unter 20 Wörter). \
+Wer die Rückseite liest, soll nicht die Hälfte schon wissen und ein Detail nicht – sie soll ganz \
+gewusst oder ganz nicht gewusst werden.
+- Verteile zusammengesetzte Inhalte auf mehrere Karten: Hat eine Aussage mehrere Teile \
+(z. B. drei Maßnahmen, Ziel und Begründung, Zahl und Vergleichszahl), lege lieber mehrere Karten an, \
+die einzeln abfragen, statt alles auf eine Rückseite zu packen. Eine Aufzählung bleibt nur dann auf \
+einer Karte, wenn genau die Aufzählung das Lernziel ist – dann höchstens drei kurze Punkte.
+- "explanation" ist optional und ebenfalls knapp (ein Satz Hintergrund, Einordnung oder \
+Einschränkung), keine zweite Antwort.
 - "tipp" ist ein Debatten-Tipp in einem Satz: wie man die Karte in einer Diskussion einsetzt, \
 worauf man achten sollte oder welcher Einwand zu erwarten ist. Nur wenn es einen echten Mehrwert \
 gibt, sonst leer.
@@ -120,12 +130,16 @@ Gegenseite, die das Paper referiert). Positionen des Papiers nicht als neutrale 
 (z. B. "Schuldenbremse", "Wohnungsbau", "Klimageld"). "tags" sind 1-4 weitere Schlagworte.
 - "importance": 3 = Kernaussage des Dokuments, 2 = wichtig, 1 = nettes Detail.
 
-Qualität vor Menge: lieber 12 starke Karten als 30 schwache. Keine Karten zu Formalia, \
+Qualität vor Menge: lieber wenige starke Karten als viele schwache – aber kurze, einzelne \
+Karten sind besser als wenige überladene. Keine Karten zu Formalia, \
 Danksagungen oder Allgemeinplätzen. Schreibe auf Deutsch, auch wenn das Dokument englisch ist \
 (Zitate bleiben im Original). Erfinde nichts, was nicht im Dokument steht.
 
 Gib zusätzlich Metadaten zum Dokument zurück; unbekannte Felder bleiben leere Strings. \
-"summary" sind 2-3 Sätze, "core_thesis" ist die zentrale These in einem Satz."""
+"summary" sind 2-3 Sätze, "core_thesis" ist die zentrale These in einem Satz. \
+"image_query" sind 2-4 englische Suchbegriffe für ein passendes, frei lizenziertes Foto: etwas \
+Konkretes, Fotografierbares zum Thema (z. B. "school classroom", "German parliament", \
+"wind turbines field"), keine abstrakten Begriffe, keine Personennamen."""
 
 
 class _TextExtractor(HTMLParser):
@@ -274,6 +288,87 @@ def call_claude(client, block: dict, package: dict) -> dict:
     return json.loads(text)
 
 
+IMAGE_QUERY_SCHEMA = {
+    "type": "object", "additionalProperties": False, "required": ["image_query"],
+    "properties": {"image_query": {"type": "string"}},
+}
+
+
+def ask_image_query(client, source: dict) -> str:
+    """Kurzer Extra-Aufruf für Dokumente, die vor den Bildvorschlägen verarbeitet wurden."""
+    text = "\n".join(filter(None, [source.get("title"), source.get("organisation"), source.get("summary")]))
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=2000,
+        messages=[{"role": "user", "content": (
+            "Nenne 2-4 englische Suchbegriffe für ein passendes, frei lizenziertes Foto zu diesem Dokument: "
+            "etwas Konkretes, Fotografierbares zum Thema, keine abstrakten Begriffe, keine Personennamen.\n\n" + text
+        )}],
+        output_config={"effort": "low", "format": {"type": "json_schema", "schema": IMAGE_QUERY_SCHEMA}},
+    )
+    if response.stop_reason != "end_turn":
+        return ""
+    return json.loads(next(b.text for b in response.content if b.type == "text"))["image_query"]
+
+
+def find_image(query: str) -> dict | None:
+    """Sucht ein frei lizenziertes Foto bei Openverse (ohne Schlüssel). Fehler brechen nichts ab."""
+    import urllib.parse
+    import urllib.request
+
+    words = query.split()
+    for q in dict.fromkeys([query, " ".join(words[:2]), words[0] if words else ""]):
+        if not q:
+            continue
+        params = urllib.parse.urlencode({
+            "q": q, "license_type": "all-cc", "category": "photograph",
+            "aspect_ratio": "wide", "mature": "false", "page_size": "10",
+        })
+        req = urllib.request.Request(
+            f"https://api.openverse.org/v1/images/?{params}",
+            headers={"User-Agent": "Wissenstrainer/1.0 (github.com/tilopatzolt/lehrreich)"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=20) as res:
+                results = json.load(res).get("results", [])
+        except Exception as exc:
+            print(f"  Bildsuche fehlgeschlagen ({q}): {exc}", file=sys.stderr)
+            return None
+        for r in results:
+            if r.get("thumbnail") and r.get("url"):
+                return {
+                    "query": q,
+                    "thumb": r["thumbnail"],
+                    "url": r["url"],
+                    "title": r.get("title") or "",
+                    "creator": r.get("creator") or "",
+                    "license": f"{(r.get('license') or '').upper()} {r.get('license_version') or ''}".strip(),
+                    "license_url": r.get("license_url") or "",
+                    "page": r.get("foreign_landing_url") or "",
+                }
+    return None
+
+
+def add_images(pkg: dict, client_factory) -> bool:
+    """Ergänzt ein Bild bei allen Dokumenten, die noch keins haben (auch ältere)."""
+    changed = False
+    for src in pkg["sources"]:
+        if src.get("status") != "ok" or "image" in src:
+            continue
+        query = src.get("image_query")
+        if not query:
+            try:
+                query = ask_image_query(client_factory(), src)
+            except Exception as exc:
+                print(f"  Suchbegriff fürs Bild fehlgeschlagen: {exc}", file=sys.stderr)
+                continue
+            src["image_query"] = query
+        src["image"] = find_image(query) if query else None
+        print(f"  Bild für {src.get('title') or src['file']}: {'gefunden' if src['image'] else 'keins gefunden'} ({query})")
+        changed = True
+    return changed
+
+
 def card_id(package_id: str, source_id: str, front: str) -> str:
     return hashlib.sha1(f"{package_id}|{source_id}|{front}".encode("utf-8")).hexdigest()[:12]
 
@@ -340,6 +435,9 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="nichts an Claude senden, nur auflisten")
     parser.add_argument("--prune", action="store_true", help="Karten gelöschter Dateien entfernen")
     parser.add_argument("--retry-failed", action="store_true", help="fehlgeschlagene Dokumente erneut versuchen")
+    parser.add_argument("--rebuild", action="store_true",
+                        help="alle Dokumente neu auswerten (neue Karten; Lernstand dieser Karten beginnt neu)")
+    parser.add_argument("--no-images", action="store_true", help="keine Bildvorschläge suchen")
     args = parser.parse_args()
 
     inbox_files = scan_inbox(args.inbox)
@@ -348,7 +446,7 @@ def main() -> int:
     # Bereits verarbeitete Dokumente aus allen Paketen: verschiebt man eine Datei in ein
     # anderes Paket, werden ihre Karten übernommen statt neu erzeugt.
     known: dict[str, tuple[dict, list[dict]]] = {}
-    for pkg in existing.values():
+    for pkg in ([] if args.rebuild else existing.values()):
         for src in pkg.get("sources", []):
             if src.get("status") == "ok":
                 known[src["sha256"]] = (src, [c for c in pkg["cards"] if c["source"] == src["id"]])
@@ -356,6 +454,13 @@ def main() -> int:
     report = ["## Wissenstrainer: Dokumente verarbeiten", ""]
     client = None
     changed_any = False
+
+    def get_client():
+        nonlocal client
+        if client is None:
+            import anthropic
+            client = anthropic.Anthropic()
+        return client
 
     for name, files in inbox_files.items():
         pid = slugify(name)
@@ -375,7 +480,7 @@ def main() -> int:
             present.add(rel)
             digest = sha256(path)
             mine = by_sha.get(digest)
-            if mine and not (args.retry_failed and mine.get("status") != "ok"):
+            if mine and not args.rebuild and not (args.retry_failed and mine.get("status") != "ok"):
                 continue
             old = by_file.get(rel) or mine
 
@@ -392,12 +497,11 @@ def main() -> int:
                 cards = build_cards(pid, source_id, prev_cards, created)
                 note = "übernommen"
             else:
-                if client is None:
-                    import anthropic
-                    client = anthropic.Anthropic()
                 print(f"→ [{name}] {rel}", flush=True)
                 try:
-                    result = call_claude(client, document_block(path), pkg)
+                    # beim Neuauswerten die alten Karten dieses Dokuments nicht als „schon vorhanden“ mitschicken
+                    others = {**pkg, "cards": [c for c in pkg["cards"] if not old or c["source"] != old["id"]]}
+                    result = call_claude(get_client(), document_block(path), others)
                 except Exception as exc:  # pro Datei weitermachen, Fehler protokollieren
                     print(f"  Fehler: {exc}", file=sys.stderr)
                     report.append(f"- ❌ **{name} / {rel}**: {exc}")
@@ -433,6 +537,9 @@ def main() -> int:
                 pkg["cards"] = [c for c in pkg["cards"] if c["source"] not in ids]
                 report += [f"- 🗑 {name}: {s['file']} entfernt" for s in gone]
                 changed = True
+
+        if not args.dry_run and not args.no_images and add_images(pkg, get_client):
+            changed = True
 
         if changed:
             pkg["updated"] = now_iso()

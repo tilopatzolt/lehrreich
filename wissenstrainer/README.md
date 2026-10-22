@@ -89,6 +89,11 @@ Was du bei Dokumenten beachten solltest:
 - **Gelöscht:** Löschst du ein Dokument aus dem Ordner, verschwinden auch seine Karten.
 - **Verschoben:** Verschiebst du ein Dokument in einen anderen Paket-Ordner, ziehen die
   Karten mit, ohne erneut Kosten zu verursachen.
+- **Bild:** Zu jedem Dokument sucht die Auswertung ein frei lizenziertes Foto (über
+  Openverse) und zeigt es samt Bildnachweis am Paket an.
+- **Neu auswerten:** Unter *Actions → Wissenstrainer (privat) → Run workflow* kannst du
+  „Alle Dokumente neu auswerten“ ankreuzen, zum Beispiel nachdem sich die Regeln für die Karten
+  geändert haben. Dabei entstehen neue Karten; der Lernstand der alten geht verloren.
 
 ## Gut zu wissen
 
