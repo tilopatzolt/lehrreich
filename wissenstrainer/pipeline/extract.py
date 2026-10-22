@@ -311,41 +311,85 @@ def ask_image_query(client, source: dict) -> str:
     return json.loads(next(b.text for b in response.content if b.type == "text"))["image_query"]
 
 
-def find_image(query: str) -> dict | None:
-    """Sucht ein frei lizenziertes Foto bei Openverse (ohne Schlüssel). Fehler brechen nichts ab."""
-    import urllib.parse
+class ImageSearchError(Exception):
+    """Die Bildsuche war nicht erreichbar – beim nächsten Lauf erneut versuchen."""
+
+
+def _get_json(url: str, timeout: int = 40) -> dict:
     import urllib.request
 
+    req = urllib.request.Request(url, headers={"User-Agent": "Wissenstrainer/1.0 (github.com/tilopatzolt/lehrreich)"})
+    with urllib.request.urlopen(req, timeout=timeout) as res:
+        return json.load(res)
+
+
+def _openverse(q: str) -> dict | None:
+    import urllib.parse
+
+    params = urllib.parse.urlencode({
+        "q": q, "license_type": "all-cc", "category": "photograph",
+        "aspect_ratio": "wide", "mature": "false", "page_size": "10",
+    })
+    for r in _get_json(f"https://api.openverse.org/v1/images/?{params}").get("results", []):
+        if r.get("thumbnail") and r.get("url"):
+            return {
+                "query": q, "thumb": r["thumbnail"], "url": r["url"],
+                "title": r.get("title") or "", "creator": r.get("creator") or "",
+                "license": f"{(r.get('license') or '').upper()} {r.get('license_version') or ''}".strip(),
+                "license_url": r.get("license_url") or "", "page": r.get("foreign_landing_url") or "",
+            }
+    return None
+
+
+def _commons(q: str) -> dict | None:
+    """Wikimedia Commons: frei lizenzierte Fotos, ebenfalls ohne Schlüssel."""
+    import re
+    import urllib.parse
+
+    params = urllib.parse.urlencode({
+        "action": "query", "format": "json", "generator": "search", "gsrnamespace": "6",
+        "gsrsearch": f"{q} filetype:bitmap", "gsrlimit": "10",
+        "prop": "imageinfo", "iiprop": "url|extmetadata|size", "iiurlwidth": "800",
+    })
+    pages = _get_json(f"https://commons.wikimedia.org/w/api.php?{params}").get("query", {}).get("pages", {})
+    strip = lambda t: re.sub(r"<[^>]+>", "", t or "").strip()
+    for page in sorted(pages.values(), key=lambda pg: pg.get("index", 99)):
+        info = (page.get("imageinfo") or [{}])[0]
+        meta = info.get("extmetadata", {})
+        if not info.get("thumburl") or info.get("width", 0) < info.get("height", 1):
+            continue  # nur Querformat
+        return {
+            "query": q, "thumb": info["thumburl"], "url": info.get("url", ""),
+            "title": strip(meta.get("ObjectName", {}).get("value")) or page.get("title", ""),
+            "creator": strip(meta.get("Artist", {}).get("value"))[:80],
+            "license": strip(meta.get("LicenseShortName", {}).get("value")),
+            "license_url": meta.get("LicenseUrl", {}).get("value", ""),
+            "page": info.get("descriptionurl", ""),
+        }
+    return None
+
+
+def find_image(query: str) -> dict | None:
+    """Sucht ein frei lizenziertes Foto (Openverse, sonst Wikimedia Commons).
+
+    Gibt None zurück, wenn es keinen Treffer gibt. Wirft ImageSearchError, wenn keine der
+    Quellen erreichbar war – dann wird beim nächsten Lauf erneut gesucht.
+    """
     words = query.split()
-    for q in dict.fromkeys([query, " ".join(words[:2]), words[0] if words else ""]):
-        if not q:
-            continue
-        params = urllib.parse.urlencode({
-            "q": q, "license_type": "all-cc", "category": "photograph",
-            "aspect_ratio": "wide", "mature": "false", "page_size": "10",
-        })
-        req = urllib.request.Request(
-            f"https://api.openverse.org/v1/images/?{params}",
-            headers={"User-Agent": "Wissenstrainer/1.0 (github.com/tilopatzolt/lehrreich)"},
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=20) as res:
-                results = json.load(res).get("results", [])
-        except Exception as exc:
-            print(f"  Bildsuche fehlgeschlagen ({q}): {exc}", file=sys.stderr)
-            return None
-        for r in results:
-            if r.get("thumbnail") and r.get("url"):
-                return {
-                    "query": q,
-                    "thumb": r["thumbnail"],
-                    "url": r["url"],
-                    "title": r.get("title") or "",
-                    "creator": r.get("creator") or "",
-                    "license": f"{(r.get('license') or '').upper()} {r.get('license_version') or ''}".strip(),
-                    "license_url": r.get("license_url") or "",
-                    "page": r.get("foreign_landing_url") or "",
-                }
+    queries = [q for q in dict.fromkeys([query, " ".join(words[:2]), words[0] if words else ""]) if q]
+    reached = False
+    for source in (_openverse, _commons):
+        for q in queries:
+            try:
+                hit = source(q)
+            except Exception as exc:
+                print(f"  Bildsuche {source.__name__.strip('_')} fehlgeschlagen ({q}): {exc}", file=sys.stderr)
+                break  # Quelle nicht erreichbar: nächste Quelle versuchen
+            reached = True
+            if hit:
+                return hit
+    if not reached:
+        raise ImageSearchError("keine Bildquelle erreichbar")
     return None
 
 
@@ -353,7 +397,8 @@ def add_images(pkg: dict, client_factory) -> bool:
     """Ergänzt ein Bild bei allen Dokumenten, die noch keins haben (auch ältere)."""
     changed = False
     for src in pkg["sources"]:
-        if src.get("status") != "ok" or "image" in src:
+        # schon ein Bild oder bereits ergebnislos gesucht → nichts tun
+        if src.get("status") != "ok" or src.get("image") or src.get("image_searched"):
             continue
         query = src.get("image_query")
         if not query:
@@ -363,8 +408,20 @@ def add_images(pkg: dict, client_factory) -> bool:
                 print(f"  Suchbegriff fürs Bild fehlgeschlagen: {exc}", file=sys.stderr)
                 continue
             src["image_query"] = query
-        src["image"] = find_image(query) if query else None
-        print(f"  Bild für {src.get('title') or src['file']}: {'gefunden' if src['image'] else 'keins gefunden'} ({query})")
+            changed = True
+        if not query:
+            continue
+        try:
+            image = find_image(query)
+        except ImageSearchError as exc:
+            print(f"  Bild für {src.get('title') or src['file']}: später erneut versuchen ({exc})")
+            continue
+        src.pop("image", None)
+        if image:
+            src["image"] = image
+        else:
+            src["image_searched"] = True
+        print(f"  Bild für {src.get('title') or src['file']}: {'gefunden' if image else 'keins gefunden'} ({query})")
         changed = True
     return changed
 
