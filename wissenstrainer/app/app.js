@@ -4,7 +4,7 @@ import { schedule, preview, isDue, isMature, dayKey } from "./srs.js";
    Zustand
    ============================================================ */
 
-const APP_VERSION = "15.10.2026 b"; // bei jeder Änderung hochzählen, wird unter „Mehr“ angezeigt
+const APP_VERSION = "22.10.2026"; // bei jeder Änderung hochzählen, wird unter „Mehr“ angezeigt
 const STORE_KEY = "wt.v1";
 const TOKEN_KEY = "wt.github";
 const CACHE_KEY = "wt.pakete";
@@ -23,7 +23,7 @@ const TYPES = {
   begriff: "Begriff",
 };
 
-const DEFAULT_SETTINGS = { newPerDay: 10, autoAccept: false, theme: "auto", skip: {} };
+const DEFAULT_SETTINGS = { newPerDay: 10, roundSize: 10, autoAccept: false, theme: "auto", skip: {} };
 
 function readJSON(key, fallback) {
   try {
@@ -500,14 +500,23 @@ window.addEventListener("hashchange", () => {
 
 const PKG_COLORS = ["var(--cognac)", "var(--slate)", "var(--accent)", "var(--t-zitat)", "var(--t-fakt)"];
 
+// Bild eines Pakets: das erste Dokument, zu dem die Auswertung ein Foto gefunden hat
+const pkgImage = (p) => (p.sources || []).find((d) => d.image?.thumb)?.image || null;
+
+function imageCredit(img) {
+  const who = [img.creator, img.license].filter(Boolean).map(esc).join(" · ");
+  return img.page ? `<a href="${esc(img.page)}" target="_blank" rel="noopener">Foto: ${who || "Quelle"}</a>` : `Foto: ${who}`;
+}
+
 function pkgCardHTML(p, i) {
+  const img = pkgImage(p);
   const s = pkgStats(p);
   const base = Math.max(1, s.active);
   const pct = Math.round((s.mature / base) * 100);
   return `
     <a class="pkg-card ${inPlan(p.id) ? "" : "paused"}" href="#/paket/${encodeURIComponent(p.id)}" style="--pc:${PKG_COLORS[i % PKG_COLORS.length]}">
       <span class="no">${String(i + 1).padStart(2, "0")}</span>
-      <div>
+      <div class="pkg-main">
         <h3>${esc(p.name)}</h3>
         <div class="chips">
           ${s.due ? `<span class="mini due">Heute ${s.due} fällig</span>` : s.active ? `<span class="mini done">${ms("check_circle")}Erledigt</span>` : ""}
@@ -516,6 +525,7 @@ function pkgCardHTML(p, i) {
           ${inPlan(p.id) ? "" : `<span class="mini">pausiert</span>`}
         </div>
       </div>
+      ${img ? `<img class="pkg-thumb" src="${esc(img.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}
       <div class="progress-row">
         <span><span>${pct} % von ${s.total}</span>${ms("arrow_forward")}</span>
         <div class="meter thin"><i style="width:${(s.mature / base) * 100}%"></i><i class="l" style="width:${(s.learning / base) * 100}%"></i></div>
@@ -532,22 +542,62 @@ function mastheadHTML() {
     </div>`;
 }
 
+let weekOffset = 0; // 0 = diese Woche, -1 = letzte Woche …
+
+const CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+
 function weekHTML() {
   const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-  const now = new Date();
-  const monday = new Date(now);
+  const monday = new Date();
   monday.setHours(12, 0, 0, 0);
-  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7) + weekOffset * 7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
   const todayKey = dayKey();
-  return `<div class="week">${days.map((d, i) => {
+  const fmt = (d) => d.toLocaleDateString("de-DE", { day: "numeric", month: "short" });
+  const label = weekOffset === 0 ? "Diese Woche" : weekOffset === -1 ? "Letzte Woche" : `${fmt(monday)} – ${fmt(sunday)}`;
+  const count = days.filter((_, i) => {
     const t = new Date(monday);
     t.setDate(monday.getDate() + i);
-    const k = dayKey(t.getTime());
-    const done = !!state.log[k]?.reviews;
-    const isToday = k === todayKey;
-    const future = k > todayKey;
-    return `<div class="${isToday ? "is-today" : ""}"><span>${d}</span><b class="${done ? "done" : ""} ${isToday ? "today" : ""}">${done ? ms("check") : isToday ? "Heute" : future ? "" : "–"}</b></div>`;
-  }).join("")}</div>`;
+    return state.log[dayKey(t.getTime())]?.reviews;
+  }).length;
+  return `
+    <div class="week-nav">
+      <button class="icon-btn" data-week="-1" aria-label="Vorherige Woche">${ms("chevron_left")}</button>
+      <span><b>${label}</b> · ${plural(count, "Lerntag", "Lerntage")}</span>
+      <button class="icon-btn" data-week="1" aria-label="Nächste Woche" ${weekOffset >= 0 ? "disabled" : ""}>${ms("chevron_right")}</button>
+    </div>
+    <div class="week">${days.map((d, i) => {
+      const t = new Date(monday);
+      t.setDate(monday.getDate() + i);
+      const k = dayKey(t.getTime());
+      const done = !!state.log[k]?.reviews;
+      const isToday = k === todayKey;
+      const future = k > todayKey;
+      return `<div class="${isToday ? "is-today" : ""}"><span>${d}</span><b class="${done ? "hit" : ""} ${isToday ? "today" : ""}" title="${t.toLocaleDateString("de-DE")}">${done ? CHECK_SVG : isToday ? "Heute" : future ? "" : "–"}</b></div>`;
+    }).join("")}</div>`;
+}
+
+function bindWeek(root) {
+  const box = $(".week-box", root);
+  if (!box) return;
+  const go = (dir) => {
+    if (dir > 0 && weekOffset >= 0) return;
+    weekOffset += dir;
+    box.innerHTML = weekHTML();
+    bindWeek(root);
+  };
+  $$("[data-week]", box).forEach((b) => b.onclick = () => go(Number(b.dataset.week)));
+  // Wischen: nach rechts = frühere Woche, nach links = spätere Woche
+  let x0 = null, y0 = 0;
+  box.onpointerdown = (e) => { x0 = e.clientX; y0 = e.clientY; };
+  box.onpointerup = (e) => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx > 0 ? -1 : 1);
+  };
+  box.onpointercancel = () => { x0 = null; };
 }
 
 let homeFilter = "alle";
@@ -600,7 +650,7 @@ function renderToday(view) {
         </div>
       </div>
       ${queue.length
-        ? `<a class="cta" href="#/lernen"><span>${ms("play_circle")}Lernen starten</span><span><span class="count">${plural(queue.length, "Karte", "Karten")} fällig</span>${ms("arrow_forward").replace('class="ms"', 'class="ms arrow"')}</span></a>`
+        ? `<a class="cta" href="#/lernen"><span>${ms("play_circle")}Lernrunde starten</span><span><span class="count">${Math.min(queue.length, state.settings.roundSize || 10)} von ${queue.length} fällig</span>${ms("arrow_forward").replace('class="ms"', 'class="ms arrow"')}</span></a>`
         : active.length
           ? `<a class="cta" href="#/lernen/frei"><span>${ms("fitness_center")}Freies Training</span><span><span class="count">alles erledigt</span>${ms("arrow_forward").replace('class="ms"', 'class="ms arrow"')}</span></a>`
           : `<a class="cta" href="#/sichten"><span>${ms("style")}Karten sichten</span>${ms("arrow_forward").replace('class="ms"', 'class="ms arrow"')}</a>`}
@@ -617,7 +667,7 @@ function renderToday(view) {
       <div><p class="eyebrow">Disziplin</p><h2 class="section serie-title"><span class="flame">${ms("local_fire_department", true)}</span>${plural(n, "Tag", "Tage")} Lernserie</h2></div>
       <span class="state-pill ${learnedToday ? "" : "off"}">${learnedToday ? "Aktiv" : "Heute offen"}</span>
     </div>
-    ${weekHTML()}
+    <div class="week-box">${weekHTML()}</div>
 
     ${pkgsAll.length ? `
     <div class="section-head">
@@ -641,6 +691,7 @@ function renderToday(view) {
   `;
 
   $$("[data-hf]", view).forEach((b) => b.onclick = () => { homeFilter = b.dataset.hf; renderToday(view); });
+  bindWeek(view);
   $("[data-qcard]", view)?.addEventListener("click", (e) => {
     e.preventDefault();
     showCard(allCards().find((c) => c.id === e.currentTarget.dataset.qcard));
@@ -657,8 +708,10 @@ function renderStudy(view, mode, pkgId) {
   if (!session) {
     const free = mode === "frei";
     const pkg = mode === "paket" ? pkgId : null;
-    const queue = free ? byStatus("active").filter((c) => inPlan(c.paket)).sort(() => Math.random() - 0.5).slice(0, 15) : studyQueue(pkg);
-    session = { free, pkg, queue, done: 0, revealed: false };
+    // eine Lernrunde umfasst höchstens „Karten pro Lernrunde“ (Einstellung, Standard 10)
+    const size = state.settings.roundSize || 10;
+    const queue = (free ? byStatus("active").filter((c) => inPlan(c.paket)).sort(() => Math.random() - 0.5) : studyQueue(pkg)).slice(0, size);
+    session = { free, pkg, mode, pkgId, queue, done: 0, revealed: false };
   }
   const s = session;
   const card = s.queue[0];
@@ -667,15 +720,26 @@ function renderStudy(view, mode, pkgId) {
   const pct = total ? Math.round((s.done / total) * 100) : 0;
 
   if (!card) {
+    const left = s.free ? 0 : studyQueue(s.pkg).length;
     view.innerHTML = `
       <div class="study">
         <div class="done">
           <div class="big">${ms(s.done ? "check" : "hourglass_empty")}</div>
           <h2>${s.done ? "Runde geschafft." : "Nichts fällig."}</h2>
-          <p class="muted">${s.done ? `${plural(s.done, "Karte", "Karten")} wiederholt. Gut vorbereitet für die nächste Debatte.` : "Gerade gibt es hier nichts zu lernen."}</p>
-          <p style="margin-top:28px"><a class="btn accent" href="${back}">Zurück</a></p>
+          <p class="muted">${s.done ? `${plural(s.done, "Karte", "Karten")} wiederholt.` : "Gerade gibt es hier nichts zu lernen."}
+            ${left ? `<br>Noch ${left} fällig – Lust auf eine weitere Runde?` : s.done ? "<br>Für heute ist alles erledigt." : ""}</p>
+          <div class="done-actions">
+            ${left || s.free ? `<button class="btn accent" data-again>${ms("replay")}Noch eine Runde${left ? ` (${Math.min(left, state.settings.roundSize || 10)})` : ""}</button>` : ""}
+            <a class="btn ghost" href="${back}">Fertig für jetzt</a>
+          </div>
         </div>
       </div>`;
+    $("[data-again]", view)?.addEventListener("click", () => {
+      const { mode: m, pkgId: p } = s;
+      session = null;
+      renderStudy(view, m, p);
+      window.scrollTo(0, 0);
+    });
     return;
   }
 
@@ -1100,6 +1164,7 @@ function renderPackage(view, id) {
     </div>
 
     <section class="pkg-hero">
+      ${pkgImage(p) ? `<figure class="pkg-photo"><img src="${esc(pkgImage(p).thumb)}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><figcaption>${imageCredit(pkgImage(p))}</figcaption></figure>` : ""}
       <div class="badges">${originBadge(p)}${inPlan(p.id) ? "" : `<span class="mini">pausiert</span>`}<span class="count">${ms("style")}${plural(s.total, "Karte", "Karten")}</span></div>
       <h1>${esc(p.name)}</h1>
       <p class="desc">${esc(desc)}</p>
@@ -1111,7 +1176,7 @@ function renderPackage(view, id) {
         </div>
         <div class="ring"><svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="26"/><circle class="fill" cx="32" cy="32" r="26" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct / 100)}"/></svg></div>
       </div>
-      <a class="cta" href="#/lernen/paket/${encodeURIComponent(p.id)}"><span>${ms("play_arrow")}${s.due ? `Jetzt lernen (${s.due} fällig)` : "Dieses Paket üben"}</span>${ms("arrow_forward").replace('class="ms"', 'class="ms arrow"')}</a>
+      <a class="cta" href="#/lernen/paket/${encodeURIComponent(p.id)}"><span>${ms("play_arrow")}${s.due ? `Lernrunde starten (${Math.min(s.due, state.settings.roundSize || 10)} von ${s.due} fällig)` : "Dieses Paket üben"}</span>${ms("arrow_forward").replace('class="ms"', 'class="ms arrow"')}</a>
     </section>
 
     <div class="group" style="margin-top:14px">
@@ -1237,6 +1302,7 @@ async function publishPackage(p) {
     sources: (p.sources || []).filter((s) => usedSources.has(s.id)).map((s) => ({
       id: s.id, title: s.title, authors: s.authors, organisation: s.organisation, published: s.published,
       doc_type: s.doc_type, summary: s.summary, core_thesis: s.core_thesis, added: s.added, status: "ok",
+      ...(s.image ? { image: s.image } : {}),
       card_count: kept.filter((c) => c.source === s.id).length,
     })),
     cards: kept.map(strip),
@@ -1398,8 +1464,10 @@ function renderSettings(view) {
     <div class="group">
       <div class="item"><div><b>Dein Vorname</b><small>Für die Begrüßung auf der Startseite</small></div>
         <input id="set-name" value="${esc(s.name || "")}" placeholder="optional" autocomplete="given-name" style="width:120px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--surface-2);font-size:15px"></div>
+      <div class="item"><div><b>Karten pro Lernrunde</b><small>So viele Karten umfasst eine Runde; danach kannst du weitermachen</small></div>
+        <div class="stepper"><button data-round="-5" aria-label="weniger">−</button><output id="round-out">${s.roundSize}</output><button data-round="5" aria-label="mehr">+</button></div></div>
       <div class="item"><div><b>Neue Karten pro Tag</b><small>Wie viele ungelernte Karten täglich dazukommen</small></div>
-        <div class="stepper"><button data-step="-5" aria-label="weniger">−</button><output>${s.newPerDay}</output><button data-step="5" aria-label="mehr">+</button></div></div>
+        <div class="stepper"><button data-step="-5" aria-label="weniger">−</button><output id="new-out">${s.newPerDay}</output><button data-step="5" aria-label="mehr">+</button></div></div>
       <div class="item"><div><b>Neue Karten ohne Sichten übernehmen</b><small>Sie kommen dann direkt in den Lernplan</small></div>
         <label class="switch"><input type="checkbox" data-auto ${s.autoAccept ? "checked" : ""} aria-label="Neue Karten ohne Sichten übernehmen"><i></i></label></div>
     </div>
@@ -1418,9 +1486,14 @@ function renderSettings(view) {
     <p class="faint" style="font-size:12.5px;text-align:center;margin-top:28px">Dein Lernstand wird nur auf diesem Gerät gespeichert.<br>Version ${APP_VERSION}</p>
   `;
 
+  $$("[data-round]", view).forEach((b) => b.onclick = () => {
+    s.roundSize = Math.max(5, Math.min(50, s.roundSize + Number(b.dataset.round)));
+    $("#round-out", view).textContent = s.roundSize;
+    save();
+  });
   $$("[data-step]", view).forEach((b) => b.onclick = () => {
     s.newPerDay = Math.max(0, Math.min(100, s.newPerDay + Number(b.dataset.step)));
-    $("output", view).textContent = s.newPerDay;
+    $("#new-out", view).textContent = s.newPerDay;
     save();
   });
   $("#set-name", view).onchange = (e) => { s.name = e.target.value.trim(); save(); };

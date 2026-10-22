@@ -14,6 +14,10 @@ on:
         description: "Fehlgeschlagene Dokumente erneut versuchen"
         type: boolean
         default: false
+      rebuild:
+        description: "Alle Dokumente neu auswerten (neue Karten – der Lernstand dieser Karten beginnt von vorn)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -56,6 +60,7 @@ jobs:
           # --prune: was nicht mehr im Ordner liegt, verschwindet auch aus dem Paket
           args="--prune"
           ${{ inputs.retry_failed == true }} && args="$args --retry-failed"
+          ${{ inputs.rebuild == true }} && args="$args --rebuild"
           python wissenstrainer/pipeline/extract.py $args
 
       - name: Karten ins Repo schreiben

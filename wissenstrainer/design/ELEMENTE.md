@@ -30,9 +30,9 @@ stammt aus einer früheren Runde mit anderen Farben und gilt nicht mehr.
 | Tagesabruf: fällige Karten im Kreis, Anteil gefestigt | ✅ | |
 | Knopf „Lernen starten“ mit Zähler | ✅ | |
 | Hinweis auf neue Entwürfe | 🛠 | |
-| Lernserie mit Wochentagen | ✅ | |
+| Lernserie mit Wochentagen | ✅ | wischbar bzw. Pfeile für frühere Wochen 🛠 |
 | Themen-Pakete, nummeriert, mit Filter Alle/Privat/Öffentlich | ✅ | Stitch-Filter waren Kategorien (Politik, Recht …) |
-| Paket-Vorschaubild | ❓ | Stitch hatte Fotos – bräuchte Bilder pro Paket |
+| Paket-Vorschaubild | ✅ | frei lizenziertes Foto (Openverse), von Claude per Suchbegriff vorgeschlagen; ❓ eigene Bilder hochladen |
 | Leitthema des Tages (großes Bild) | ❓ | weggelassen; Idee: Paket mit den meisten fälligen Karten |
 | Zitat des Tages | ✅ | nimmt jeden Tag ein anderes Zitat aus deinen Karten |
 | Hinweis „Beispieldaten“ | 🛠 | verschwindet mit dem ersten echten Dokument |
@@ -48,7 +48,8 @@ stammt aus einer früheren Runde mit anderen Farben und gilt nicht mehr.
 | Quelle | ✅ | ❓ „Quelle extern“-Link: geht erst, wenn Dokumente einen Link haben |
 | Lesezeichen auf der Karte | ❓ | in Stitch, noch ohne Funktion → weggelassen |
 | Bewertung: Nochmal / Schwer / Gut / Leicht | ✅ | |
-| Abschluss-Bildschirm einer Runde | 🛠 | ❓ kleine Animation zum Feiern |
+| Abschluss-Bildschirm einer Runde | 🛠 | mit „Noch eine Runde“; ❓ kleine Animation zum Feiern |
+| Lernrunden mit fester Größe | 🛠 | Standard 10 Karten, einstellbar unter „Mehr“ |
 
 ## Sichten
 
@@ -69,6 +70,7 @@ stammt aus einer früheren Runde mit anderen Farben und gilt nicht mehr.
 | Bibliothek: Pakete nach Privat/Öffentlich | 🛠 | Stitch hatte keinen Bibliothek-Bildschirm |
 | Bibliothek: alle Karten mit Suche und Filtern | 🛠 | |
 | Paket-Kopf mit Sichtbarkeit, Kartenzahl, Beschreibung | ✅ | Beschreibung = Zusammenfassung des ersten Dokuments |
+| Titelfoto mit Bildnachweis | 🛠 | Bildnachweis ist bei CC-Lizenzen Pflicht |
 | Fortschritt mit Ring, „Heute fällig“ | ✅ | |
 | Knopf „Jetzt lernen“ | ✅ | |
 | Schalter „Im täglichen Lernplan“ | 🛠 | |
