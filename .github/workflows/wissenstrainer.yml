@@ -18,6 +18,10 @@ on:
         description: "Alle Dokumente neu auswerten (neue Karten – der Lernstand dieser Karten beginnt von vorn)"
         type: boolean
         default: false
+      new_images:
+        description: "Bilder neu suchen (ein in der App gewähltes Bild bleibt)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -61,6 +65,7 @@ jobs:
           args="--prune"
           ${{ inputs.retry_failed == true }} && args="$args --retry-failed"
           ${{ inputs.rebuild == true }} && args="$args --rebuild"
+          ${{ inputs.new_images == true }} && args="$args --new-images"
           python wissenstrainer/pipeline/extract.py $args
 
       - name: Karten ins Repo schreiben

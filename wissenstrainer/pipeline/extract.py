@@ -138,8 +138,8 @@ Danksagungen oder Allgemeinplätzen. Schreibe auf Deutsch, auch wenn das Dokumen
 Gib zusätzlich Metadaten zum Dokument zurück; unbekannte Felder bleiben leere Strings. \
 "summary" sind 2-3 Sätze, "core_thesis" ist die zentrale These in einem Satz. \
 "image_query" sind 2-4 englische Suchbegriffe für ein passendes, frei lizenziertes Foto: etwas \
-Konkretes, Fotografierbares zum Thema (z. B. "school classroom", "German parliament", \
-"wind turbines field"), keine abstrakten Begriffe, keine Personennamen."""
+Konkretes, Fotografierbares zum Thema, gern mit Ort (z. B. "Berlin school classroom", \
+"Bundestag plenary", "wind turbines field"), keine abstrakten Begriffe, keine Personennamen."""
 
 
 class _TextExtractor(HTMLParser):
@@ -302,7 +302,8 @@ def ask_image_query(client, source: dict) -> str:
         max_tokens=2000,
         messages=[{"role": "user", "content": (
             "Nenne 2-4 englische Suchbegriffe für ein passendes, frei lizenziertes Foto zu diesem Dokument: "
-            "etwas Konkretes, Fotografierbares zum Thema, keine abstrakten Begriffe, keine Personennamen.\n\n" + text
+            "etwas Konkretes, Fotografierbares zum Thema, gern mit Ort (z. B. \"Berlin school classroom\"), "
+            "keine abstrakten Begriffe, keine Personennamen.\n\n" + text
         )}],
         output_config={"effort": "low", "format": {"type": "json_schema", "schema": IMAGE_QUERY_SCHEMA}},
     )
@@ -323,74 +324,137 @@ def _get_json(url: str, timeout: int = 40) -> dict:
         return json.load(res)
 
 
-def _openverse(q: str) -> dict | None:
+def _openverse(q: str) -> list[dict]:
     import urllib.parse
 
     params = urllib.parse.urlencode({
         "q": q, "license_type": "all-cc", "category": "photograph",
-        "aspect_ratio": "wide", "mature": "false", "page_size": "10",
+        "aspect_ratio": "wide", "mature": "false", "page_size": "8",
     })
-    for r in _get_json(f"https://api.openverse.org/v1/images/?{params}").get("results", []):
-        if r.get("thumbnail") and r.get("url"):
-            return {
-                "query": q, "thumb": r["thumbnail"], "url": r["url"],
-                "title": r.get("title") or "", "creator": r.get("creator") or "",
-                "license": f"{(r.get('license') or '').upper()} {r.get('license_version') or ''}".strip(),
-                "license_url": r.get("license_url") or "", "page": r.get("foreign_landing_url") or "",
-            }
-    return None
+    return [{
+        "query": q, "thumb": r["thumbnail"], "url": r["url"],
+        "title": r.get("title") or "", "creator": r.get("creator") or "",
+        "license": f"{(r.get('license') or '').upper()} {r.get('license_version') or ''}".strip(),
+        "license_url": r.get("license_url") or "", "page": r.get("foreign_landing_url") or "",
+    } for r in _get_json(f"https://api.openverse.org/v1/images/?{params}").get("results", [])
+        if r.get("thumbnail") and r.get("url")]
 
 
-def _commons(q: str) -> dict | None:
+def _commons(q: str) -> list[dict]:
     """Wikimedia Commons: frei lizenzierte Fotos, ebenfalls ohne Schlüssel."""
     import re
     import urllib.parse
 
     params = urllib.parse.urlencode({
         "action": "query", "format": "json", "generator": "search", "gsrnamespace": "6",
-        "gsrsearch": f"{q} filetype:bitmap", "gsrlimit": "10",
+        "gsrsearch": f"{q} filetype:bitmap", "gsrlimit": "8",
         "prop": "imageinfo", "iiprop": "url|extmetadata|size", "iiurlwidth": "800",
     })
     pages = _get_json(f"https://commons.wikimedia.org/w/api.php?{params}").get("query", {}).get("pages", {})
     strip = lambda t: re.sub(r"<[^>]+>", "", t or "").strip()
+    hits = []
     for page in sorted(pages.values(), key=lambda pg: pg.get("index", 99)):
         info = (page.get("imageinfo") or [{}])[0]
         meta = info.get("extmetadata", {})
         if not info.get("thumburl") or info.get("width", 0) < info.get("height", 1):
             continue  # nur Querformat
-        return {
+        hits.append({
             "query": q, "thumb": info["thumburl"], "url": info.get("url", ""),
             "title": strip(meta.get("ObjectName", {}).get("value")) or page.get("title", ""),
             "creator": strip(meta.get("Artist", {}).get("value"))[:80],
             "license": strip(meta.get("LicenseShortName", {}).get("value")),
             "license_url": meta.get("LicenseUrl", {}).get("value", ""),
             "page": info.get("descriptionurl", ""),
-        }
-    return None
+        })
+    return hits
 
 
-def find_image(query: str) -> dict | None:
-    """Sucht ein frei lizenziertes Foto (Openverse, sonst Wikimedia Commons).
+def image_candidates(query: str, limit: int = 12) -> list[dict]:
+    """Sammelt Fotos aus Openverse und Wikimedia Commons.
 
-    Gibt None zurück, wenn es keinen Treffer gibt. Wirft ImageSearchError, wenn keine der
-    Quellen erreichbar war – dann wird beim nächsten Lauf erneut gesucht.
+    Wirft ImageSearchError, wenn keine der Quellen erreichbar war – dann wird beim nächsten
+    Lauf erneut gesucht.
     """
     words = query.split()
-    queries = [q for q in dict.fromkeys([query, " ".join(words[:2]), words[0] if words else ""]) if q]
+    queries = [q for q in dict.fromkeys([query, " ".join(words[:3]), " ".join(words[:2])]) if q]
+    found: dict[str, dict] = {}
     reached = False
     for source in (_openverse, _commons):
         for q in queries:
             try:
-                hit = source(q)
+                hits = source(q)
             except Exception as exc:
                 print(f"  Bildsuche {source.__name__.strip('_')} fehlgeschlagen ({q}): {exc}", file=sys.stderr)
                 break  # Quelle nicht erreichbar: nächste Quelle versuchen
             reached = True
-            if hit:
-                return hit
+            for hit in hits[:6]:
+                found.setdefault(hit["url"], hit)
+            if len(hits) >= 3:
+                break  # genug Auswahl aus dieser Quelle
     if not reached:
         raise ImageSearchError("keine Bildquelle erreichbar")
-    return None
+    return list(found.values())[:limit]
+
+
+def _download(url: str, timeout: int = 30) -> tuple[bytes, str] | None:
+    import urllib.request
+
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Wissenstrainer/1.0 (github.com/tilopatzolt/lehrreich)"})
+        with urllib.request.urlopen(req, timeout=timeout) as res:
+            mime = res.headers.get_content_type()
+            data = res.read(5 * 1024 * 1024 + 1)
+    except Exception:
+        return None
+    if mime not in ("image/jpeg", "image/png", "image/gif", "image/webp") or len(data) > 5 * 1024 * 1024:
+        return None
+    return data, mime
+
+
+IMAGE_CHOICE_SCHEMA = {
+    "type": "object", "additionalProperties": False, "required": ["choice"],
+    "properties": {"choice": {"type": "integer"}},
+}
+
+
+def choose_image(client, source: dict, candidates: list[dict]) -> dict | None:
+    """Claude sieht sich die Vorschaubilder an und wählt das passendste.
+
+    Lieber ein mäßig passendes Bild als gar keins: Klappt die Auswahl nicht, wird der erste
+    ladbare Treffer genommen.
+    """
+    import base64
+
+    content, shown = [], []
+    for cand in candidates:
+        got = _download(cand["thumb"])
+        if not got:
+            continue
+        shown.append(cand)
+        content += [
+            {"type": "text", "text": f"Bild {len(shown)}: {cand['title'][:120]}"},
+            {"type": "image", "source": {"type": "base64", "media_type": got[1], "data": base64.b64encode(got[0]).decode()}},
+        ]
+    if not shown:
+        return candidates[0]
+    topic = "\n".join(filter(None, [source.get("title"), source.get("organisation"), source.get("summary")]))
+    content.append({"type": "text", "text": (
+        "Welches dieser Fotos passt als Titelbild zu diesem Dokument?\n\n" + topic + "\n\n"
+        "Am besten zeigt das Foto das Thema heute: passender Ort und passende Zeit (z. B. eine heutige "
+        "Schule in Deutschland bei einem Berliner Bildungsthema). Möglichst meiden: historische Aufnahmen, "
+        "Scans von Buchseiten, Karten, Diagramme, Logos und Schrift. Wähle in jedem Fall eins, auch "
+        "wenn keins ideal ist – dann das am wenigsten unpassende. Antworte mit seiner Nummer."
+    )})
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=4000,
+        messages=[{"role": "user", "content": content}],
+        output_config={"effort": "low", "format": {"type": "json_schema", "schema": IMAGE_CHOICE_SCHEMA}},
+    )
+    if response.stop_reason != "end_turn":
+        return shown[0]
+    choice = json.loads(next(b.text for b in response.content if b.type == "text"))["choice"]
+    return shown[choice - 1] if 1 <= choice <= len(shown) else shown[0]
 
 
 def add_images(pkg: dict, client_factory) -> bool:
@@ -412,16 +476,24 @@ def add_images(pkg: dict, client_factory) -> bool:
         if not query:
             continue
         try:
-            image = find_image(query)
+            candidates = image_candidates(query)
         except ImageSearchError as exc:
             print(f"  Bild für {src.get('title') or src['file']}: später erneut versuchen ({exc})")
             continue
+        image = None
+        if candidates:
+            try:
+                image = choose_image(client_factory(), src, candidates)
+            except Exception as exc:  # lieber den ersten Treffer als gar kein Bild
+                print(f"  Bildauswahl fehlgeschlagen, nehme den ersten Treffer: {exc}", file=sys.stderr)
+                image = candidates[0]
         src.pop("image", None)
         if image:
             src["image"] = image
         else:
             src["image_searched"] = True
-        print(f"  Bild für {src.get('title') or src['file']}: {'gefunden' if image else 'keins gefunden'} ({query})")
+        print(f"  Bild für {src.get('title') or src['file']}: "
+              f"{'gefunden' if image else 'keins gefunden'} ({query}, {len(candidates)} angesehen)")
         changed = True
     return changed
 
@@ -495,6 +567,8 @@ def main() -> int:
     parser.add_argument("--rebuild", action="store_true",
                         help="alle Dokumente neu auswerten (neue Karten; Lernstand dieser Karten beginnt neu)")
     parser.add_argument("--no-images", action="store_true", help="keine Bildvorschläge suchen")
+    parser.add_argument("--new-images", action="store_true",
+                        help="Bildvorschläge neu suchen (ein in der App gewähltes Bild bleibt)")
     args = parser.parse_args()
 
     inbox_files = scan_inbox(args.inbox)
@@ -527,6 +601,13 @@ def main() -> int:
         }
         pkg["name"] = name
         changed = False
+        if args.new_images and not args.dry_run:
+            # auch den Suchbegriff neu bestimmen lassen
+            for src in pkg["sources"]:
+                for key in ("image", "image_searched", "image_query"):
+                    if key in src:
+                        del src[key]
+                        changed = True
         by_sha = {s["sha256"]: s for s in pkg["sources"]}
         by_file = {s["file"]: s for s in pkg["sources"]}
         present = set()
