@@ -4,7 +4,7 @@ import { schedule, preview, isDue, isMature, dayKey } from "./srs.js";
    Zustand
    ============================================================ */
 
-const APP_VERSION = "22.10.2026"; // bei jeder Änderung hochzählen, wird unter „Mehr“ angezeigt
+const APP_VERSION = "22.10.2026b"; // bei jeder Änderung hochzählen, wird unter „Mehr“ angezeigt
 const STORE_KEY = "wt.v1";
 const TOKEN_KEY = "wt.github";
 const CACHE_KEY = "wt.pakete";
@@ -324,6 +324,7 @@ const icon = {
   chevron: ms("chevron_right"),
   back: ms("arrow_back"),
   share: ms("ios_share"),
+  image: ms("image"),
 };
 
 // Rückseiten-Überschrift je Kartenart
@@ -500,8 +501,8 @@ window.addEventListener("hashchange", () => {
 
 const PKG_COLORS = ["var(--cognac)", "var(--slate)", "var(--accent)", "var(--t-zitat)", "var(--t-fakt)"];
 
-// Bild eines Pakets: das erste Dokument, zu dem die Auswertung ein Foto gefunden hat
-const pkgImage = (p) => (p.sources || []).find((d) => d.image?.thumb)?.image || null;
+// Bild eines Pakets: in der App gewählt (false = bewusst keins), sonst der Vorschlag der Auswertung
+const pkgImage = (p) => p.image === false ? null : p.image?.thumb ? p.image : (p.sources || []).find((d) => d.image?.thumb)?.image || null;
 
 function imageCredit(img) {
   const who = [img.creator, img.license].filter(Boolean).map(esc).join(" · ");
@@ -1151,6 +1152,7 @@ function renderPackage(view, id) {
   const docs = (p.sources || []).slice().sort((a, b) => String(b.added).localeCompare(String(a.added)));
   const cards = allCards().filter((c) => c.paket === p.id);
   const canPublish = isOwner() && p.origin === "privat" && p.id !== "eigene";
+  const canEditImage = isOwner() && !isDemo && p.id !== "eigene";
   const pct = s.active ? Math.round((s.mature / s.active) * 100) : 0;
   const C = 2 * Math.PI * 26;
   const desc = docs.find((d) => d.summary)?.summary || (docs.length ? `Aus ${plural(docs.filter((d) => d.status !== "fehler").length, "Dokument", "Dokumenten")}.` : "Eigene Karten.");
@@ -1165,6 +1167,7 @@ function renderPackage(view, id) {
 
     <section class="pkg-hero">
       ${pkgImage(p) ? `<figure class="pkg-photo"><img src="${esc(pkgImage(p).thumb)}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><figcaption>${imageCredit(pkgImage(p))}</figcaption></figure>` : ""}
+      ${canEditImage ? `<button class="btn ghost sm photo-add" data-image>${icon.image}${pkgImage(p) ? "Bild ändern" : "Bild wählen"}</button>` : ""}
       <div class="badges">${originBadge(p)}${inPlan(p.id) ? "" : `<span class="mini">pausiert</span>`}<span class="count">${ms("style")}${plural(s.total, "Karte", "Karten")}</span></div>
       <h1>${esc(p.name)}</h1>
       <p class="desc">${esc(desc)}</p>
@@ -1246,6 +1249,7 @@ function renderPackage(view, id) {
     save();
   };
   $("[data-upload]", view)?.addEventListener("click", () => uploadSheet({ origin: p.origin, pkgName: p.name }));
+  $("[data-image]", view)?.addEventListener("click", () => imageSheet(p));
   $$("[data-share-link]", view).forEach((btn) => btn.addEventListener("click", async () => {
     if (!isPublic) return toast(canPublish ? "Erst öffentlich teilen, dann gibt es einen Link" : "Nur öffentliche Pakete haben einen Link");
     const url = shareUrl(p);
@@ -1305,6 +1309,7 @@ async function publishPackage(p) {
       ...(s.image ? { image: s.image } : {}),
       card_count: kept.filter((c) => c.source === s.id).length,
     })),
+    ...(p.image !== undefined ? { image: p.image } : {}),
     cards: kept.map(strip),
   };
   try {
@@ -1314,6 +1319,116 @@ async function publishPackage(p) {
   } catch (err) {
     toast(`Teilen fehlgeschlagen: ${err.message}`);
   }
+}
+
+/* ---------- Bild wählen ---------- */
+
+// Gleiche Quellen wie die Auswertung: Openverse und Wikimedia Commons, beide ohne Schlüssel
+async function searchImages(q) {
+  const json = async (url) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  };
+  const openverse = json(`https://api.openverse.org/v1/images/?${new URLSearchParams({
+    q, license_type: "all-cc", category: "photograph", aspect_ratio: "wide", mature: "false", page_size: "12",
+  })}`).then((d) => (d.results || []).filter((r) => r.thumbnail && r.url).map((r) => ({
+    query: q, thumb: r.thumbnail, url: r.url, title: r.title || "", creator: r.creator || "",
+    license: `${(r.license || "").toUpperCase()} ${r.license_version || ""}`.trim(),
+    license_url: r.license_url || "", page: r.foreign_landing_url || "",
+  })));
+  const strip = (t) => String(t || "").replace(/<[^>]+>/g, "").trim();
+  const commons = json(`https://commons.wikimedia.org/w/api.php?${new URLSearchParams({
+    action: "query", format: "json", origin: "*", generator: "search", gsrnamespace: "6",
+    gsrsearch: `${q} filetype:bitmap`, gsrlimit: "12", prop: "imageinfo", iiprop: "url|extmetadata|size", iiurlwidth: "800",
+  })}`).then((d) => Object.values(d.query?.pages || {}).sort((a, b) => (a.index ?? 99) - (b.index ?? 99)).map((pg) => {
+    const info = pg.imageinfo?.[0] || {};
+    const meta = info.extmetadata || {};
+    if (!info.thumburl || (info.width || 0) < (info.height || 1)) return null; // nur Querformat
+    return {
+      query: q, thumb: info.thumburl, url: info.url || "",
+      title: strip(meta.ObjectName?.value) || pg.title || "", creator: strip(meta.Artist?.value).slice(0, 80),
+      license: strip(meta.LicenseShortName?.value), license_url: meta.LicenseUrl?.value || "", page: info.descriptionurl || "",
+    };
+  }).filter(Boolean));
+  const results = await Promise.allSettled([openverse, commons]);
+  if (results.every((r) => r.status === "rejected")) throw new Error("Bildsuche nicht erreichbar");
+  // abwechselnd aus beiden Quellen, damit beide oben auftauchen
+  const lists = results.map((r) => (r.status === "fulfilled" ? r.value : []));
+  const mixed = [];
+  for (let i = 0; i < Math.max(...lists.map((l) => l.length)); i++) lists.forEach((l) => l[i] && mixed.push(l[i]));
+  return mixed;
+}
+
+// Paketdatei(en), in denen das Bild gespeichert wird
+function imageTargets(p) {
+  const id = p.id.replace(/~oeffentlich$/, "");
+  const targets = [];
+  if (p.origin === "privat") targets.push([github.privateRepo, `${PRIVATE.data}/${id}.json`]);
+  if (p.origin === "oeffentlich" || p.published) targets.push([github.publicRepo, `${PUBLIC.data}/${id}.json`]);
+  return targets;
+}
+
+async function savePackageImage(p, image) {
+  try {
+    for (const [repo, path] of imageTargets(p)) {
+      const data = await ghRaw(repo, path);
+      data.image = image;
+      await ghPut(repo, path, toBase64Text(JSON.stringify(data, null, 1) + "\n"), `Wissenstrainer: Bild für „${p.name}“ ${image ? "gewählt" : "entfernt"}`);
+    }
+    p.image = image;
+    // auch die zwischengespeicherte Fassung anpassen (nicht neu laden: GitHub liefert kurz noch die alte Datei)
+    const cached = readJSON(CACHE_KEY, { priv: [], pub: [] });
+    const id = p.id.replace(/~oeffentlich$/, "");
+    [...cached.priv, ...cached.pub].filter((x) => x.id === id).forEach((x) => { x.image = image; });
+    writeJSON(CACHE_KEY, cached);
+    closeSheet();
+    render();
+    toast(image ? "Bild gespeichert" : "Bild entfernt");
+  } catch (err) {
+    toast(`Speichern fehlgeschlagen: ${err.message}`);
+  }
+}
+
+function imageSheet(p) {
+  const query = (p.sources || []).find((d) => d.image_query)?.image_query || p.name;
+  openSheet(`
+    <h2>Bild für „${esc(p.name)}“</h2>
+    <p class="muted" style="margin-top:-6px">Frei lizenzierte Fotos. Probier ruhig andere Suchwörter, auf Englisch findet sich meist mehr.</p>
+    <form id="img-form"><label class="search">${icon.search}<input type="search" id="img-q" value="${esc(query)}" aria-label="Bild suchen" enterkeyhint="search"></label></form>
+    <div class="img-grid" id="img-grid"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" data-close>Abbrechen</button>
+      ${pkgImage(p) ? `<button class="btn ghost danger" data-none>Kein Bild</button>` : ""}
+    </div>`, (sheet) => {
+    let hits = [];
+    const grid = $("#img-grid", sheet);
+    const run = async () => {
+      const q = $("#img-q", sheet).value.trim();
+      if (!q) return;
+      grid.innerHTML = `<p class="faint">Suche …</p>`;
+      try {
+        hits = await searchImages(q);
+      } catch (err) {
+        grid.innerHTML = `<p class="danger">${esc(err.message)}</p>`;
+        return;
+      }
+      grid.innerHTML = hits.length
+        ? hits.map((h, i) => `<button type="button" data-pick="${i}" aria-label="${esc(h.title || "Bild")} wählen"><img src="${esc(h.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></button>`).join("")
+        : `<p class="faint">Nichts gefunden. Andere Suchwörter?</p>`;
+    };
+    $("#img-form", sheet).onsubmit = (e) => { e.preventDefault(); $("#img-q", sheet).blur(); run(); };
+    grid.onclick = (e) => {
+      const btn = e.target.closest("[data-pick]");
+      if (!btn) return;
+      $$("[data-pick]", grid).forEach((b) => b.disabled = true);
+      btn.classList.add("picked");
+      savePackageImage(p, hits[+btn.dataset.pick]);
+    };
+    $("[data-close]", sheet).onclick = closeSheet;
+    $("[data-none]", sheet)?.addEventListener("click", () => savePackageImage(p, false));
+    run();
+  });
 }
 
 async function unpublishPackage(p) {

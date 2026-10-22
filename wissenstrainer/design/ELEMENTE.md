@@ -32,7 +32,7 @@ stammt aus einer früheren Runde mit anderen Farben und gilt nicht mehr.
 | Hinweis auf neue Entwürfe | 🛠 | |
 | Lernserie mit Wochentagen | ✅ | wischbar bzw. Pfeile für frühere Wochen 🛠 |
 | Themen-Pakete, nummeriert, mit Filter Alle/Privat/Öffentlich | ✅ | Stitch-Filter waren Kategorien (Politik, Recht …) |
-| Paket-Vorschaubild | ✅ | frei lizenziertes Foto (Openverse), von Claude per Suchbegriff vorgeschlagen; ❓ eigene Bilder hochladen |
+| Paket-Vorschaubild | ✅ | frei lizenziertes Foto (Openverse/Commons); Claude wählt aus mehreren Treffern; ❓ eigene Fotos hochladen |
 | Leitthema des Tages (großes Bild) | ❓ | weggelassen; Idee: Paket mit den meisten fälligen Karten |
 | Zitat des Tages | ✅ | nimmt jeden Tag ein anderes Zitat aus deinen Karten |
 | Hinweis „Beispieldaten“ | 🛠 | verschwindet mit dem ersten echten Dokument |
@@ -71,6 +71,7 @@ stammt aus einer früheren Runde mit anderen Farben und gilt nicht mehr.
 | Bibliothek: alle Karten mit Suche und Filtern | 🛠 | |
 | Paket-Kopf mit Sichtbarkeit, Kartenzahl, Beschreibung | ✅ | Beschreibung = Zusammenfassung des ersten Dokuments |
 | Titelfoto mit Bildnachweis | 🛠 | Bildnachweis ist bei CC-Lizenzen Pflicht |
+| Bild ändern (Blatt mit Suche und Bildraster) | 🛠 | Auswahl wird im Paket gespeichert, auch für die geteilte Fassung |
 | Fortschritt mit Ring, „Heute fällig“ | ✅ | |
 | Knopf „Jetzt lernen“ | ✅ | |
 | Schalter „Im täglichen Lernplan“ | 🛠 | |
