@@ -78,6 +78,13 @@ Repository.
 
 - **Vom Handy:** in der App **Mehr → Dokument hinzufügen**. Dort wählst du die Ablage
   (Privat/Öffentlich), den Paketnamen und die Datei.
+- **Text einfügen:** in der App **Mehr → Text einfügen**, zum Beispiel eine Zusammenfassung aus
+  Claude. Der Text wird als Dokument abgelegt und wie eine Datei zu Karten. Klappt auch am
+  Rechner im Browser.
+- **Aus Cowork:** Die Fähigkeit (Skill) in `cowork/wissenstrainer-uebergabe` fasst eine
+  Recherche so zusammen, dass gute Karten daraus werden. In Cowork einmal als Skill hochladen
+  (`cowork/wissenstrainer-uebergabe.zip`), danach am Ende einer Recherche schreiben: „Mach
+  daraus etwas für den Wissenstrainer“.
 - **Am Rechner:** im passenden Repository in den Paket-Ordner gehen (z. B.
   `privat/Schuldenbremse/`) und **Add file → Upload files** klicken. Ein neues Paket entsteht,
   wenn du beim Hochladen einen neuen Ordnernamen in den Pfad schreibst.

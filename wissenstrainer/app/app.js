@@ -4,7 +4,7 @@ import { schedule, preview, isDue, isMature, dayKey } from "./srs.js";
    Zustand
    ============================================================ */
 
-const APP_VERSION = "22.10.2026b"; // bei jeder Änderung hochzählen, wird unter „Mehr“ angezeigt
+const APP_VERSION = "19.11.2026"; // bei jeder Änderung hochzählen, wird unter „Mehr“ angezeigt
 const STORE_KEY = "wt.v1";
 const TOKEN_KEY = "wt.github";
 const CACHE_KEY = "wt.pakete";
@@ -1477,7 +1477,7 @@ function renderSheetView(view, id) {
    Dokument hinzufügen
    ============================================================ */
 
-function uploadSheet({ origin = "privat", pkgName = "" } = {}) {
+function uploadSheet({ origin = "privat", pkgName = "", mode = "datei" } = {}) {
   if (!isOwner()) {
     location.hash = "#/mehr";
     toast("Zuerst die App mit deinem Schlüssel verbinden");
@@ -1489,6 +1489,10 @@ function uploadSheet({ origin = "privat", pkgName = "" } = {}) {
 
   openSheet(`
     <h2>Dokument hinzufügen</h2>
+    <div class="seg">
+      <button type="button" data-mode="datei">${icon.upload} Datei</button>
+      <button type="button" data-mode="text">${icon.pen} Text einfügen</button>
+    </div>
     <form>
       <div class="field"><label>Ablage</label>
         <div class="seg" style="margin:0">
@@ -1502,8 +1506,15 @@ function uploadSheet({ origin = "privat", pkgName = "" } = {}) {
         <datalist id="u-pkg-list"></datalist>
         <small class="faint">Vorhandenes Paket wählen oder neuen Namen eingeben</small>
       </div>
-      <div class="field"><label for="u-file">Dateien</label>
-        <input id="u-file" type="file" multiple accept=".pdf,.docx,.txt,.md,.html,.htm" required>
+      <div class="field" data-for="datei"><label for="u-file">Dateien</label>
+        <input id="u-file" type="file" multiple accept=".pdf,.docx,.txt,.md,.html,.htm">
+      </div>
+      <div class="field" data-for="text"><label for="u-title">Titel <span class="faint">(optional)</span></label>
+        <input id="u-title" placeholder="z. B. Recherche Startchancen-Programm" autocomplete="off">
+      </div>
+      <div class="field" data-for="text"><label for="u-text">Text</label>
+        <textarea id="u-text" class="paste" placeholder="Hier den Text einfügen, z. B. die Zusammenfassung aus Claude"></textarea>
+        <small class="faint">Wird als Dokument abgelegt und wie jede Datei zu Karten.</small>
       </div>
       <div class="upload-log" id="upload-log" style="margin:0 0 12px"></div>
       <div class="sheet-actions">
@@ -1521,23 +1532,45 @@ function uploadSheet({ origin = "privat", pkgName = "" } = {}) {
     };
     setOrigin(origin);
     $$("[data-origin]", sheet).forEach((b) => b.onclick = () => setOrigin(b.dataset.origin));
+    const setMode = (m) => {
+      mode = m;
+      $$("[data-mode]", sheet).forEach((b) => b.classList.toggle("on", b.dataset.mode === m));
+      $$("[data-for]", sheet).forEach((f) => { f.hidden = f.dataset.for !== m; });
+    };
+    setMode(mode);
+    $$("[data-mode]", sheet).forEach((b) => b.onclick = () => setMode(b.dataset.mode));
     $("[data-cancel]", sheet).onclick = closeSheet;
     $("form", sheet).onsubmit = async (e) => {
       e.preventDefault();
       const pkg = $("#u-pkg", sheet).value.trim().replace(/[\/\\]+/g, "-");
-      const files = [...$("#u-file", sheet).files];
       const log = $("#upload-log", sheet);
+      const clean = (n) => n.normalize("NFC").replace(/[^\p{L}\p{N}._ -]+/gu, "_").trim();
+      let uploads;
+      if (mode === "text") {
+        const text = $("#u-text", sheet).value.trim();
+        if (!text) return toast("Bitte zuerst Text einfügen");
+        const given = $("#u-title", sheet).value.trim();
+        const title = given || text.replace(/^#+\s*/, "").split("\n")[0];
+        const day = new Date().toISOString().slice(0, 10);
+        // eigener Titel wird Überschrift; sonst bleibt der Text, wie er ist
+        const body = given && !/^#\s/.test(text) ? `# ${given}\n\n${text}` : text;
+        const base = clean(title).slice(0, 60).replace(/[\s.]+$/, "") || "Text";
+        uploads = [{ name: `${day} ${base}.md`, base64: () => toBase64Text(body + "\n") }];
+      } else {
+        const files = [...$("#u-file", sheet).files];
+        if (!files.length) return toast("Bitte eine Datei auswählen");
+        uploads = files.map((file) => ({ name: clean(file.name), base64: () => fileToBase64(file) }));
+      }
       const btn = $("button[type=submit]", sheet);
       btn.disabled = true;
       const repo = origin === "privat" ? github.privateRepo : github.publicRepo;
       const dir = origin === "privat" ? PRIVATE.docs : PUBLIC.docs;
-      for (const file of files) {
-        const name = file.name.normalize("NFC").replace(/[^\p{L}\p{N}._ -]+/gu, "_").trim();
+      for (const { name, base64 } of uploads) {
         const line = document.createElement("div");
         line.textContent = `⏳ ${name}`;
         log.append(line);
         try {
-          await ghPut(repo, `${dir}/${pkg}/${name}`, await fileToBase64(file), `Wissenstrainer: ${name} → ${pkg}`);
+          await ghPut(repo, `${dir}/${pkg}/${name}`, await base64(), `Wissenstrainer: ${name} → ${pkg}`);
           line.textContent = `✅ ${name} – wird in ein paar Minuten zu Karten`;
         } catch (err) {
           line.textContent = `❌ ${name}: ${err.message}`;
@@ -1545,6 +1578,10 @@ function uploadSheet({ origin = "privat", pkgName = "" } = {}) {
       }
       btn.disabled = false;
       $("#u-file", sheet).value = "";
+      if (mode === "text" && !log.textContent.includes("❌")) {
+        $("#u-text", sheet).value = "";
+        $("#u-title", sheet).value = "";
+      }
     };
   });
 }
@@ -1565,7 +1602,7 @@ function renderSettings(view) {
     <div class="section-head" style="margin-top:0"><h2 class="section">Dokumente</h2></div>
     <div class="group">
       ${isOwner() ? `
-        <div class="item"><button class="btn block accent" data-upload>${icon.upload} Dokument hinzufügen</button></div>
+        <div class="item two-btn"><button class="btn block accent" data-upload>${icon.upload} Dokument</button><button class="btn block ghost" data-paste>${icon.pen} Text einfügen</button></div>
         <div class="item"><div><b>Neue Karten abrufen</b><small>${privateError ? `Private Ablage nicht erreichbar: ${esc(privateError)}` : "Holt fertig verarbeitete Dokumente"}</small></div><button class="icon-btn" data-refresh aria-label="Aktualisieren">${icon.refresh}</button></div>
         <div class="item"><div><b>Verbunden</b><small>Privat: ${esc(github.privateRepo || "–")}<br>Öffentlich: ${esc(github.publicRepo)}</small></div><button class="link" data-gh>Ändern</button></div>
       ` : `
@@ -1617,6 +1654,7 @@ function renderSettings(view) {
   $$("[data-refresh]", view).forEach((b) => b.onclick = () => load({ quiet: false }));
   $$("[data-gh]", view).forEach((b) => b.onclick = githubSheet);
   $("[data-upload]", view)?.addEventListener("click", () => uploadSheet());
+  $("[data-paste]", view)?.addEventListener("click", () => uploadSheet({ mode: "text" }));
 
   $("[data-export]", view).onclick = () =>
     shareOrDownload(`wissenstrainer-lernstand-${dayKey()}.json`, JSON.stringify(state, null, 1), "application/json");

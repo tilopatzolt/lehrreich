@@ -86,7 +86,7 @@ stammt aus einer früheren Runde mit anderen Farben und gilt nicht mehr.
 | Baustein | Status | Notiz |
 |---|---|---|
 | Mehr / Einstellungen | 🛠 | |
-| Dokument hinzufügen (Blatt) | 🛠 | |
+| Dokument hinzufügen (Blatt) | 🛠 | Umschalter Datei / Text einfügen |
 | Karte bearbeiten / eigene Karte (Blatt) | 🛠 | |
 | Rückfrage-Blatt (z. B. vor dem Teilen) | 🛠 | |
 | Lernzettel zum Drucken | 🛠 | |
