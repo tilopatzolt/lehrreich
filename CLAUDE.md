@@ -28,6 +28,8 @@ und lernen. Ausführliche Anleitung für Tilo: `wissenstrainer/README.md`.
 - Workflows: `.github/workflows/wissenstrainer.yml` (öffentlich + Veröffentlichung der App) und
   `wissenstrainer-privat.yml` im privaten Repo. Optionen beim manuellen Start: fehlgeschlagene
   Dokumente erneut, alles neu auswerten (Lernstand der Karten geht verloren), Bilder neu suchen.
+- `cowork/wissenstrainer-uebergabe/` – Skill für Claude Cowork: Recherche → Übergabe-Dokument
+  (Tilo recherchiert meist in Cowork). Nach Änderungen die ZIP daneben neu packen.
 - `design/ELEMENTE.md` – Liste aller Bausteine mit Design-Stand; bei jeder sichtbaren Änderung
   mitpflegen. Design-Vorlage aus Google Stitch in `design/stitch/`.
 
