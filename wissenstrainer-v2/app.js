@@ -13,7 +13,7 @@ import {
   lernstandUebernehmen, bereicheStand, bereicheSpeichern, bereichAnlegen, paketId, SAMMELBEREICH,
 } from "./github.js";
 
-const APP_STAND = "22.11.2026c";
+const APP_STAND = "22.11.2026d";
 
 /* ============================================================
    Hilfen
@@ -966,7 +966,7 @@ function zeigeSichern(v) {
   v.innerHTML = `
     ${kopf("Lernstand sichern")}
     <div class="seite">
-      <p class="neben" style="margin-bottom:16px">Dein Lernstand liegt nur auf diesem Gerät. Mit einer Sicherung kannst du ihn auf ein anderes Gerät mitnehmen.</p>
+      <p class="neben" style="margin-bottom:16px">Dein Lernstand liegt nur auf diesem Gerät. Mit einer Sicherung kannst du ihn auf ein anderes Gerät mitnehmen. Einspielen nimmt auch eine Sicherung der ersten Version an.</p>
       <div class="zeilen" style="gap:12px">
         <button class="knopf zweit" data-raus>Lernstand herunterladen</button>
         <button class="knopf zweit" data-rein>Lernstand einspielen</button>
@@ -986,6 +986,16 @@ function zeigeSichern(v) {
   $("#sicherung", v).onchange = async (e) => {
     try {
       const d = JSON.parse(await e.target.files[0].text());
+      // Sicherung der ersten Version (Mehr → Lernstand → Sichern): Lernstand übernehmen, Inhalte bleiben
+      if (!d.app && d.cards && d.settings) {
+        if (!verbunden()) return melden("Erst unter „Mehr → Verbindung“ verbinden, dann die Sicherung einspielen.");
+        standNeu(lernstandUebernehmen(d));
+        runde = null;
+        inhaltSetzen(db.inhalt);
+        melden("Lernstand aus der ersten Version übernommen");
+        zeichnen();
+        return;
+      }
       if (d.app !== "wissenstrainer-v2" || !d.inhalt || !d.stand) throw new Error();
       Object.assign(db, { inhalt: d.inhalt, stand: d.stand, einst: { ...db.einst, ...d.einst } });
       speichern();
@@ -1069,19 +1079,20 @@ async function verbinden(daten, knopf) {
       $("[data-nein]", bl).onclick = () => { blattZu(); einrichten(null); };
     });
   } else {
-    einrichten(null);
+    einrichten(null, true);
   }
 }
 
 // Von Beispieldaten auf echte Daten wechseln
-async function einrichten(uebernommen) {
+async function einrichten(uebernommen, ohneAltdaten = false) {
   melden("Lade deine Pakete …");
   try {
     const inhalt = await inhaltLaden();
     standNeu(uebernommen);
     runde = null;
     inhaltSetzen(inhalt);
-    melden(`Verbunden: ${mehrzahl(inhalt.pakete.filter((p) => !p.basis || kartenVonPaket(p.id).length).length, "Paket", "Pakete")} geladen`);
+    const n = mehrzahl(inhalt.pakete.filter((p) => !p.basis || kartenVonPaket(p.id).length).length, "Paket", "Pakete");
+    melden(ohneAltdaten ? `${n} geladen. Lernstand der ersten Version: unter „Mehr → Lernstand sichern“ einspielen.` : `Verbunden: ${n} geladen`);
     location.hash = "#/welt";
     zeichnen();
   } catch (err) {
