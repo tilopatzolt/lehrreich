@@ -1,7 +1,7 @@
 // Wissenstrainer v2 – Bildschirme. Aussehen nach design/DESIGN.md, Aufbau nach design/05 Skizzen Aufbau.html.
 import {
   tag, woche, istNeu, istFaellig, bewerten, paketFertig,
-  planWarteschlange, schwierigeKarten, freieKarten, MAX_STUFE,
+  planWarteschlange, schwierigeKarten, freieKarten, faelligVorschau, MAX_STUFE,
 } from "./kern.js";
 import {
   db, laden, speichern, beispielLaden, allesZuruecksetzen, bereich, paket, karte, stand,
@@ -12,9 +12,10 @@ import {
   verbunden, verbindung, verbindungSpeichern, trennen, pruefen, inhaltLaden, hochladen, ersteVersion,
   lernstandUebernehmen, bereicheStand, bereicheSpeichern, bereichAnlegen, paketId, SAMMELBEREICH, paketZuordnen,
   paketBildSpeichern, paketTeilen, paketNichtTeilen, paketLink,
+  erinnerungSchluessel, aboSpeichern, aboEntfernen, erinnerungStandMelden,
 } from "./github.js";
 
-const APP_STAND = "23.11.2026d";
+const APP_STAND = "23.11.2026e";
 
 /* ============================================================
    Hilfen
@@ -203,10 +204,12 @@ const routen = {
   lernen: zeigeLernen, geschafft: zeigeGeschafft, fortschritt: zeigeFortschritt, ueben: zeigeUeben,
   mehr: zeigeMehr, sichten: zeigeSichten, verwalten: zeigeVerwalten, suche: zeigeSuche,
   einstellungen: zeigeEinstellungen, sichern: zeigeSichern, verbindung: zeigeVerbindung, zettel: zeigeZettel,
+  erinnerung: zeigeErinnerung,
 };
 const REITER_VON = {
   welt: "welt", bereich: "welt", paket: "welt", zettel: "welt", bereiche: "bereiche", ueben: "ueben", fortschritt: "ueben",
   mehr: "mehr", sichten: "mehr", verwalten: "mehr", suche: "mehr", einstellungen: "mehr", sichern: "mehr", verbindung: "mehr",
+  erinnerung: "mehr",
 };
 
 function route() {
@@ -251,6 +254,8 @@ const amSteg = () => db.inhalt.bereiche.filter((b) => !hatBauplatz(b));
 
 function zeigeWelt(v) {
   const p = plan();
+  zahlAmSymbol(p.length);
+  erinnerungMelden();
   const n = p.length;
   const groesse = db.einst.rundenGroesse;
   const runden = Math.ceil(n / groesse);
@@ -794,6 +799,8 @@ function werten(k, urteil) {
     zeichnen();
   } else {
     runde.fertig = true;
+    zahlAmSymbol(plan().length);
+    erinnerungMelden();
     db.stand.zuckertuete = (db.stand.zuckertuete || 0) + 1;
     speichern();
     location.replace("#/geschafft");
@@ -967,6 +974,7 @@ function zeigeMehr(v) {
       <div class="zeile aus"><span>Fotos</span><span class="rechts">später</span></div>
       <a class="zeile" href="#/verwalten"><span>Bereiche verwalten</span></a>
       <a class="zeile" href="#/suche"><span>Alle Karten durchsuchen</span></a>
+      <a class="zeile" href="#/erinnerung"><span>Erinnerung</span><span class="rechts">${db.einst.erinnerung ? "täglich 10 Uhr" : "aus"}</span></a>
       <a class="zeile" href="#/verbindung"><span>Verbindung</span><span class="rechts">${verbunden() ? "verbunden" : "Beispieldaten"}</span></a>
       <a class="zeile" href="#/einstellungen"><span>Einstellungen</span></a>
       <a class="zeile" href="#/sichern"><span>Lernstand sichern</span></a>
@@ -1326,6 +1334,102 @@ function zeigeSichern(v) {
     location.hash = "#/welt";
     zeichnen();
   }));
+}
+
+/* ---------- Erinnerung ---------- */
+
+// Zahl der heute fälligen Karten am App-Symbol (iPhone ab iOS 16.4, nur vom Home-Bildschirm, mit erlaubten Mitteilungen)
+function zahlAmSymbol(n) {
+  try {
+    if (n > 0) navigator.setAppBadge?.(n)?.catch?.(() => {});
+    else navigator.clearAppBadge?.()?.catch?.(() => {});
+  } catch { /* nicht unterstützt */ }
+}
+
+// Fällige Karten je Tag an GitHub melden – nur wenn die Erinnerung an ist, sich etwas geändert hat
+// und höchstens alle 20 Minuten (außer bei neuem Tag)
+let meldungLaeuft = false;
+async function erinnerungMelden() {
+  if (!db.einst.erinnerung || !verbunden() || db.inhalt.beispiel || meldungLaeuft) return;
+  const vorschau = faelligVorschau(planKarten(), db.stand.karten, heute(), { neuProTag: db.einst.neuProTag, neuHeuteSchon: heuteLog().neu });
+  const text = JSON.stringify(vorschau);
+  const letzte = db.einst.erinnerungGemeldet || {};
+  const neuerTag = letzte.tag !== heute();
+  if (text === letzte.text || (!neuerTag && Date.now() - (letzte.zeit || 0) < 20 * 60 * 1000)) return;
+  meldungLaeuft = true;
+  try {
+    await erinnerungStandMelden(vorschau);
+    db.einst.erinnerungGemeldet = { text, tag: heute(), zeit: Date.now() };
+    speichern();
+  } catch { /* beim nächsten Mal */ } finally {
+    meldungLaeuft = false;
+  }
+}
+
+const vomHomeBildschirm = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const istIphone = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
+
+function zeigeErinnerung(v) {
+  const an = !!db.einst.erinnerung;
+  const kannPush = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  let hinweis = "";
+  if (!verbunden()) hinweis = "Erst unter „Mehr → Verbindung“ verbinden.";
+  else if (istIphone() && !vomHomeBildschirm()) hinweis = "Auf dem iPhone geht das nur, wenn du die App über ihr Symbol auf dem Home-Bildschirm öffnest (Safari → Teilen → „Zum Home-Bildschirm“).";
+  else if (!kannPush) hinweis = "Dieser Browser kann keine Mitteilungen empfangen.";
+  else if (Notification.permission === "denied") hinweis = "Mitteilungen sind für diese App ausgeschaltet. Du kannst sie in den Einstellungen des Handys unter „Mitteilungen“ wieder erlauben.";
+  v.innerHTML = `
+    ${kopf("Erinnerung")}
+    <div class="seite">
+      <p class="neben" style="margin-bottom:16px">Jeden Tag um 10 Uhr eine kurze Mitteilung, wie viele Karten auf dich warten. Ist nichts fällig, kommt keine. Am App-Symbol steht die Zahl der heute fälligen Karten.</p>
+      <div class="zeilen"><div class="zeile"><span>Tägliche Erinnerung</span><span class="rechts">${an ? "an, 10 Uhr" : "aus"}</span></div></div>
+      ${hinweis ? `<p class="neben" style="margin-top:16px">${esc(hinweis)}</p>` : ""}
+      <div class="zeilen" style="gap:12px;margin-top:20px">
+        ${an ? `<button class="knopf zweit" data-aus>Erinnerung ausschalten</button>`
+          : `<button class="knopf" data-an ${hinweis ? "disabled" : ""}>Erinnerung einschalten</button>`}
+      </div>
+    </div>`;
+  $("[data-an]", v)?.addEventListener("click", (e) => erinnerungEin(e.currentTarget));
+  $("[data-aus]", v)?.addEventListener("click", (e) => erinnerungAus(e.currentTarget));
+}
+
+// Base64url → Bytes (Format des öffentlichen Schlüssels)
+const b64Bytes = (t) => Uint8Array.from(atob(t.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(t.length / 4) * 4, "=")), (c) => c.charCodeAt(0));
+
+async function erinnerungEin(knopf) {
+  knopf.disabled = true;
+  try {
+    const erlaubt = await Notification.requestPermission();
+    if (erlaubt !== "granted") throw new Error("Mitteilungen wurden nicht erlaubt");
+    const schluessel = await erinnerungSchluessel();
+    if (!schluessel) throw new Error("Bei GitHub fehlt noch der Schlüssel zum Senden");
+    const reg = await navigator.serviceWorker.ready;
+    const abo = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64Bytes(schluessel) });
+    await aboSpeichern(abo.toJSON(), istIphone() ? "iPhone" : "Gerät");
+    db.einst.erinnerung = abo.endpoint;
+    db.einst.erinnerungGemeldet = null;
+    speichern();
+    await erinnerungMelden();
+    zahlAmSymbol(plan().length);
+    melden("Erinnerung eingeschaltet – täglich um 10 Uhr");
+  } catch (err) {
+    melden(`Hat nicht geklappt: ${err.message}`);
+  }
+  zeichnen();
+}
+
+async function erinnerungAus(knopf) {
+  knopf.disabled = true;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const abo = await reg.pushManager.getSubscription();
+    await aboEntfernen(abo?.endpoint || db.einst.erinnerung);
+    await abo?.unsubscribe();
+  } catch { /* trotzdem ausschalten */ }
+  db.einst.erinnerung = null;
+  speichern();
+  zahlAmSymbol(0);
+  melden("Erinnerung ausgeschaltet");
+  zeichnen();
 }
 
 /* ---------- Verbindung ---------- */

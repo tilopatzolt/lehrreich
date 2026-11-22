@@ -28,6 +28,18 @@ bleibt dabei unverändert.
 - **Neue Bereiche:** Mehr → Bereiche verwalten. Sie haben keinen eigenen Bauplatz und fahren mit
   der Bildungsreise.
 
+## Tägliche Erinnerung
+
+**Mehr → Erinnerung → einschalten** (auf dem iPhone nur aus der App auf dem Home-Bildschirm):
+Jeden Tag um 10 Uhr kommt eine Mitteilung, wie viele Karten warten; ist nichts fällig, kommt keine.
+Am App-Symbol steht die Zahl der heute fälligen Karten.
+
+- Gesendet wird vom Workflow **„Tägliche Erinnerung“** im privaten Repo (kostenlos, per Zeitplan).
+  Beim ersten Lauf erzeugt er die Schlüssel zum Senden; der private Teil bleibt bei GitHub.
+- Die App meldet dafür nur die Zahl fälliger Karten je Tag (`erinnerung/stand.json`), wenn sie sich
+  ändert. Der Lernstand selbst bleibt auf dem Handy.
+- Ausprobieren: im privaten Repo **Actions → Tägliche Erinnerung → Run workflow → „Jetzt senden“**.
+
 ## Landkarte
 
 Filz-Spielteppich als Hintergrund (`img/welt-tag.webp`, `img/welt-nacht.webp`). Die sieben

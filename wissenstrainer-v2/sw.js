@@ -1,6 +1,6 @@
 // Offline-Fähigkeit nur für /v2/ – eigener Cache-Name, berührt die erste Version nicht.
 // Bei Änderungen an der App VERSION erhöhen.
-const VERSION = "wt2-8";
+const VERSION = "wt2-9";
 const SHELL = [
   "./", "index.html", "styles.css", "app.js", "kern.js", "daten.js", "github.js", "data/demo.json", "manifest.webmanifest",
   "fonts/jost-latin.woff2", "fonts/jost-latin-ext.woff2", "icons/favicon-64.png", "icons/icon-192.png", "icons/icon-180.png",
@@ -48,4 +48,21 @@ self.addEventListener("fetch", (e) => {
       })
       .catch(() => caches.match(e.request, { ignoreSearch: true })),
   );
+});
+
+// Tägliche Erinnerung (Web-Push vom Workflow „Tägliche Erinnerung“): Mitteilung und Zahl am Symbol
+self.addEventListener("push", (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { /* Text statt JSON */ }
+  const zeigen = self.registration.showNotification(d.titel || "Wissenstrainer", {
+    body: d.text || "Zeit für deine Lernrunde.", icon: "icons/icon-192.png", tag: "erinnerung",
+  });
+  const zahl = d.zahl != null && self.navigator.setAppBadge ? self.navigator.setAppBadge(d.zahl).catch(() => {}) : null;
+  e.waitUntil(Promise.all([zeigen, zahl]));
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((fenster) =>
+    fenster.length ? fenster[0].focus() : self.clients.openWindow("./")));
 });
