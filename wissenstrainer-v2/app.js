@@ -14,7 +14,7 @@ import {
   paketBildSpeichern, paketTeilen, paketNichtTeilen, paketLink,
 } from "./github.js";
 
-const APP_STAND = "23.11.2026b";
+const APP_STAND = "23.11.2026c";
 
 /* ============================================================
    Hilfen
