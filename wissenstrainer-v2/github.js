@@ -99,9 +99,9 @@ export function paketId(name) {
 
 const STANDARD_BEREICHE = [
   ["schule", "Schule", "schule"], ["lehrkraefte", "Lehrkräfte", "lehrkraefte"],
-  ["universitaeten", "Universitäten", "universitaeten"], ["senatsverwaltung", "Senatsverwaltung", "senatsverwaltung"],
+  ["universitaeten", "Universitäten & Wissenschaft", "universitaeten"], ["senatsverwaltung", "Senatsverwaltung", "senatsverwaltung"],
   ["recht", "Recht", "recht"], ["schueler", "Schüler:innen", "schueler"],
-  ["lebenslang", "Lebenslanges Lernen", "lebenslang"], ["bauplatz", "Bauplatz und Segelboot", "bauplatz"],
+  ["lebenslang", "Berufsbildung und lebenslanges Lernen", "lebenslang"], ["bauplatz", "Bauplatz und Segelboot", "bauplatz"],
 ];
 export const SAMMELBEREICH = "bauplatz"; // offener Sammelbereich: alles ohne Zuordnung landet hier
 
