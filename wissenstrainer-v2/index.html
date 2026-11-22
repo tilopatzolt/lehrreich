@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de" data-theme="tag">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Wissenstrainer</title>
+  <meta name="description" content="Lernkarten zur Bildungspolitik – Bereiche, Pakete, Karten">
+  <meta name="theme-color" content="#F4F5F2">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Wissen 2">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="preload" href="fonts/jost-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Modus vor dem ersten Zeichnen setzen, damit nichts aufblitzt
+    try {
+      var m = (JSON.parse(localStorage.getItem("wt2.einstellungen") || "{}").modus) || "auto";
+      if (m === "auto") m = matchMedia("(prefers-color-scheme: dark)").matches ? "nacht" : "tag";
+      document.documentElement.dataset.theme = m;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <div id="app">
+    <main id="view" tabindex="-1"></main>
+  </div>
+  <nav class="nav" aria-label="Hauptnavigation"><div class="nav-innen"></div></nav>
+  <div id="blatt-platz"></div>
+  <div class="meldung" id="meldung" role="status" aria-live="polite"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+{
+  "hinweis": "Beispieldaten zum Durchklicken. demo = Lernstand beim Start: gelernt, teils, neu (behalten, noch nicht gelernt) oder entwurf (noch sichten).",
+  "bereiche": [
+    {
+      "id": "schule", "name": "Schule", "kennung": "schule",
+      "foto": {
+        "thumb": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Ellerbeker_Stra%C3%9Fe_7_%28Berlin-Gesundbrunnen%29_Gemeindeschule.JPG/960px-Ellerbeker_Stra%C3%9Fe_7_%28Berlin-Gesundbrunnen%29_Gemeindeschule.JPG",
+        "creator": "Bodo Kubrak", "license": "CC BY-SA 4.0",
+        "page": "https://commons.wikimedia.org/wiki/File:Ellerbeker_Stra%C3%9Fe_7_(Berlin-Gesundbrunnen)_Gemeindeschule.JPG"
+      }
+    },
+    { "id": "senatsverwaltung", "name": "Senatsverwaltung", "kennung": "senatsverwaltung" },
+    { "id": "recht", "name": "Recht", "kennung": "recht" }
+  ],
+  "pakete": [
+    { "id": "schule-basis", "bereich": "schule", "name": "Grundlagen Schule", "basis": true, "demo": "teils",
+      "quellen": [{ "titel": "Schulgesetz für das Land Berlin", "herausgeber": "Land Berlin" }] },
+    { "id": "schullaufbahn", "bereich": "schule", "name": "Schullaufbahn", "demo": "gelernt",
+      "quellen": [{ "titel": "Wege durch die Berliner Schule", "herausgeber": "Senatsverwaltung für Bildung, Jugend und Familie" }] },
+    { "id": "ganztag", "bereich": "schule", "name": "Ganztag", "demo": "entwurf",
+      "quellen": [{ "titel": "Ganztagsförderungsgesetz", "herausgeber": "Bund" }] },
+
+    { "id": "verwaltung-basis", "bereich": "senatsverwaltung", "name": "Grundlagen Verwaltung", "basis": true, "demo": "neu",
+      "quellen": [{ "titel": "Schulgesetz für das Land Berlin", "herausgeber": "Land Berlin" }] },
+    { "id": "zustaendigkeiten", "bereich": "senatsverwaltung", "name": "Zuständigkeiten", "demo": "neu",
+      "quellen": [{ "titel": "Allgemeines Zuständigkeitsgesetz", "herausgeber": "Land Berlin" }] },
+    { "id": "qualitaet", "bereich": "senatsverwaltung", "name": "ISQ und BLiQ", "demo": "entwurf",
+      "quellen": [{ "titel": "Recherche ISQ und BLiQ", "herausgeber": "eigene Recherche" }] },
+
+    { "id": "recht-basis", "bereich": "recht", "name": "Grundlagen Recht", "basis": true, "demo": "gelernt",
+      "quellen": [{ "titel": "Grundgesetz für die Bundesrepublik Deutschland", "herausgeber": "Bund" }] },
+    { "id": "schulgesetz", "bereich": "recht", "name": "Schulgesetz", "demo": "gelernt",
+      "quellen": [{ "titel": "Schulgesetz für das Land Berlin", "herausgeber": "Land Berlin" }] }
+  ],
+  "karten": [
+    { "id": "s1", "paket": "schule-basis", "frage": "Wie viele Jahre dauert die Grundschule in Berlin in der Regel?", "antwort": "Sechs Jahre.", "quelle": "Schulgesetz Berlin" },
+    { "id": "s2", "paket": "schule-basis", "frage": "Welche zwei weiterführenden Schularten gibt es in Berlin?", "antwort": "Integrierte Sekundarschule und Gymnasium.", "quelle": "Schulgesetz Berlin" },
+    { "id": "s3", "paket": "schule-basis", "frage": "Wofür steht die Abkürzung ISS?", "antwort": "Integrierte Sekundarschule.", "quelle": "Schulgesetz Berlin" },
+    { "id": "s4", "paket": "schule-basis", "frage": "Welche Schulform führt in Berlin von Klasse 1 bis zum Abitur?", "antwort": "Die Gemeinschaftsschule.", "quelle": "Schulgesetz Berlin" },
+    { "id": "s5", "paket": "schule-basis", "frage": "Was ist der MSA?", "antwort": "Der Mittlere Schulabschluss am Ende von Klasse 10.", "quelle": "Schulgesetz Berlin" },
+    { "id": "s6", "paket": "schule-basis", "frage": "Welcher Abschluss ist nach Klasse 9 möglich?", "antwort": "Die Berufsbildungsreife (BBR).", "quelle": "Schulgesetz Berlin" },
+
+    { "id": "l1", "paket": "schullaufbahn", "frage": "In welcher Klasse gibt es am Gymnasium das Probejahr?", "antwort": "In Klasse 7.", "quelle": "Schulgesetz Berlin" },
+    { "id": "l2", "paket": "schullaufbahn", "frage": "In welcher Klasse wird die Förderprognose erstellt?", "antwort": "In Klasse 6.", "quelle": "Schulgesetz Berlin" },
+    { "id": "l3", "paket": "schullaufbahn", "frage": "Nach wie vielen Jahren führt das Gymnasium zum Abitur?", "antwort": "Nach zwölf Jahren.", "quelle": "Schulgesetz Berlin" },
+    { "id": "l4", "paket": "schullaufbahn", "frage": "Nach wie vielen Jahren führt die Integrierte Sekundarschule zum Abitur?", "antwort": "Nach dreizehn Jahren.", "quelle": "Schulgesetz Berlin" },
+
+    { "id": "g1", "paket": "ganztag", "frage": "Ab welchem Schuljahr gilt der Rechtsanspruch auf Ganztag für Erstklässler?", "antwort": "Ab dem Schuljahr 2026/27.", "quelle": "Ganztagsförderungsgesetz" },
+    { "id": "g2", "paket": "ganztag", "frage": "Wie wird der Rechtsanspruch auf Ganztag eingeführt?", "antwort": "Jahr für Jahr aufwachsend, bis Klasse 4.", "quelle": "Ganztagsförderungsgesetz" },
+    { "id": "g3", "paket": "ganztag", "frage": "Was unterscheidet die gebundene von der offenen Ganztagsschule?", "antwort": "Im gebundenen Ganztag ist die Teilnahme für alle verpflichtend.", "quelle": "Schulgesetz Berlin" },
+
+    { "id": "v1", "paket": "verwaltung-basis", "frage": "Welche Senatsverwaltung ist für die Berliner Schulen zuständig?", "antwort": "Die Senatsverwaltung für Bildung, Jugend und Familie.", "quelle": "Land Berlin" },
+    { "id": "v2", "paket": "verwaltung-basis", "frage": "Wie viele Bezirke hat Berlin?", "antwort": "Zwölf.", "quelle": "Verfassung von Berlin" },
+    { "id": "v3", "paket": "verwaltung-basis", "frage": "Wer übt in Berlin die Schulaufsicht aus?", "antwort": "Die Senatsverwaltung, über die regionale Schulaufsicht.", "quelle": "Schulgesetz Berlin" },
+
+    { "id": "z1", "paket": "zustaendigkeiten", "frage": "Wer ist Schulträger der allgemeinbildenden Schulen in Berlin?", "antwort": "Die Bezirke.", "quelle": "Schulgesetz Berlin" },
+    { "id": "z2", "paket": "zustaendigkeiten", "frage": "Wofür sind die Bezirke als Schulträger zuständig?", "antwort": "Für die äußeren Schulangelegenheiten, etwa Gebäude und Ausstattung.", "quelle": "Schulgesetz Berlin" },
+    { "id": "z3", "paket": "zustaendigkeiten", "frage": "Wer stellt die Lehrkräfte an öffentlichen Schulen in Berlin ein?", "antwort": "Das Land Berlin.", "quelle": "Schulgesetz Berlin" },
+
+    { "id": "q1", "paket": "qualitaet", "frage": "Faustregel zur Aufgabenteilung zwischen ISQ und BLiQ?", "antwort": "Das ISQ misst und wertet aus, das BLiQ qualifiziert und unterstützt.", "quelle": "Recherche ISQ und BLiQ" },
+    { "id": "q2", "paket": "qualitaet", "frage": "Welche Rechtsform hat das ISQ?", "antwort": "Gemeinnütziger Verein und An-Institut der Freien Universität Berlin.", "quelle": "Recherche ISQ und BLiQ" },
+    { "id": "q3", "paket": "qualitaet", "frage": "In welcher Norm ist das BLiQ geregelt?", "antwort": "§ 108 Schulgesetz Berlin.", "quelle": "Recherche ISQ und BLiQ" },
+
+    { "id": "r1", "paket": "recht-basis", "frage": "Welcher Artikel des Grundgesetzes regelt das Schulwesen?", "antwort": "Artikel 7.", "quelle": "Grundgesetz" },
+    { "id": "r2", "paket": "recht-basis", "frage": "Unter wessen Aufsicht steht nach dem Grundgesetz das Schulwesen?", "antwort": "Unter der Aufsicht des Staates.", "quelle": "Art. 7 Abs. 1 GG" },
+    { "id": "r3", "paket": "recht-basis", "frage": "Wer ist in Deutschland für die Schulen zuständig?", "antwort": "Die Länder (Kulturhoheit).", "quelle": "Grundgesetz" },
+    { "id": "r4", "paket": "recht-basis", "frage": "Welches Gremium stimmt die Bildungspolitik der Länder ab?", "antwort": "Die Kultusministerkonferenz (KMK).", "quelle": "KMK" },
+    { "id": "r5", "paket": "recht-basis", "frage": "Wer entscheidet über die Teilnahme eines Kindes am Religionsunterricht?", "antwort": "Die Erziehungsberechtigten.", "quelle": "Art. 7 Abs. 2 GG" },
+    { "id": "r6", "paket": "recht-basis", "frage": "Wo garantiert das Grundgesetz das Recht, Privatschulen zu gründen?", "antwort": "In Artikel 7 Absatz 4.", "quelle": "Grundgesetz" },
+    { "id": "r7", "paket": "recht-basis", "frage": "Welcher Artikel der Berliner Verfassung garantiert das Recht auf Bildung?", "antwort": "Artikel 20.", "quelle": "Verfassung von Berlin" },
+    { "id": "r8", "paket": "recht-basis", "frage": "Seit wann gilt die UN-Behindertenrechtskonvention in Deutschland?", "antwort": "Seit 2009.", "quelle": "UN-Behindertenrechtskonvention" },
+    { "id": "r9", "paket": "recht-basis", "frage": "Welcher Artikel der UN-Behindertenrechtskonvention regelt das Recht auf Bildung?", "antwort": "Artikel 24.", "quelle": "UN-Behindertenrechtskonvention" },
+    { "id": "r10", "paket": "recht-basis", "frage": "Ist Religion an Berliner Schulen ein ordentliches Lehrfach?", "antwort": "Nein, die Teilnahme ist freiwillig.", "quelle": "Schulgesetz Berlin" },
+    { "id": "r11", "paket": "recht-basis", "frage": "Welches Fach ist in Berlin in den Klassen 7 bis 10 Pflicht für alle?", "antwort": "Ethik.", "quelle": "Schulgesetz Berlin" },
+
+    { "id": "t1", "paket": "schulgesetz", "frage": "Aus welchem Jahr stammt das geltende Berliner Schulgesetz?", "antwort": "Aus dem Jahr 2004.", "quelle": "Schulgesetz Berlin" },
+    { "id": "t2", "paket": "schulgesetz", "frage": "Wie viele Schulbesuchsjahre umfasst die allgemeine Schulpflicht in Berlin?", "antwort": "Zehn.", "quelle": "Schulgesetz Berlin" },
+    { "id": "t3", "paket": "schulgesetz", "frage": "Welche Kinder werden in Berlin zum Schuljahresbeginn schulpflichtig?", "antwort": "Kinder, die bis zum 30. September sechs Jahre alt werden.", "quelle": "Schulgesetz Berlin" },
+    { "id": "t4", "paket": "schulgesetz", "frage": "Welche Pflicht schließt an die allgemeine Schulpflicht an?", "antwort": "Die Berufsschulpflicht.", "quelle": "Schulgesetz Berlin" },
+    { "id": "t5", "paket": "schulgesetz", "frage": "Welches ist das oberste Gremium der Mitwirkung an einer Schule?", "antwort": "Die Schulkonferenz.", "quelle": "Schulgesetz Berlin" },
+    { "id": "t6", "paket": "schulgesetz", "frage": "Wie heißt die Vertretung der Eltern auf Ebene des Bezirks?", "antwort": "Bezirkselternausschuss.", "quelle": "Schulgesetz Berlin" },
+    { "id": "t7", "paket": "schulgesetz", "frage": "Welches Gremium berät die Senatsverwaltung landesweit in Schulfragen?", "antwort": "Der Landesschulbeirat.", "quelle": "Schulgesetz Berlin" },
+    { "id": "t8", "paket": "schulgesetz", "frage": "Kostet der Besuch einer öffentlichen Schule in Berlin Schulgeld?", "antwort": "Nein, er ist schulgeldfrei.", "quelle": "Schulgesetz Berlin" },
+    { "id": "t9", "paket": "schulgesetz", "frage": "Wie heißt die Vertretung der Schülerinnen und Schüler einer Schule?", "antwort": "Die Schülervertretung.", "quelle": "Schulgesetz Berlin" },
+    { "id": "t10", "paket": "schulgesetz", "frage": "Was gleicht ein Nachteilsausgleich aus?", "antwort": "Nachteile durch eine Behinderung, ohne die Anforderungen zu senken.", "quelle": "Schulgesetz Berlin" },
+    { "id": "t11", "paket": "schulgesetz", "frage": "Wer leitet die Schulkonferenz?", "antwort": "Die Schulleiterin oder der Schulleiter.", "quelle": "Schulgesetz Berlin" }
+  ]
+}
