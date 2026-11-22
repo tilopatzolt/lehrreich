@@ -99,11 +99,12 @@ export function paketId(name) {
 
 const STANDARD_BEREICHE = [
   ["schule", "Schule", "schule"], ["lehrkraefte", "Lehrkräfte", "lehrkraefte"],
-  ["universitaeten", "Universitäten", "universitaeten"], ["senatsverwaltung", "Senatsverwaltung", "senatsverwaltung"],
+  ["universitaeten", "Universitäten & Wissenschaft", "universitaeten"], ["senatsverwaltung", "Senatsverwaltung", "senatsverwaltung"],
   ["recht", "Recht", "recht"], ["schueler", "Schüler:innen", "schueler"],
-  ["lebenslang", "Lebenslanges Lernen", "lebenslang"], ["bauplatz", "Bauplatz und Segelboot", "bauplatz"],
+  ["lebenslang", "Berufsbildung und lebenslanges Lernen", "lebenslang"], ["bildungsreise", "Bildungsreise", "allgemein"],
 ];
-export const SAMMELBEREICH = "bauplatz"; // offener Sammelbereich: alles ohne Zuordnung landet hier
+// offener Sammelbereich am Steg: Pakete ohne Zuordnung landen hier
+export const SAMMELBEREICH = "bildungsreise";
 
 export function bereichAnlegen(id, name, kennung) {
   // Ordnernamen ohne Doppelpunkt (unter Windows nicht erlaubt): „Schüler:innen“ → „Schülerinnen“
@@ -134,7 +135,9 @@ export function umwandeln(bd, privat, oeffentlich) {
   const pakete = [];
   const karten = [];
   const nimm = (p, herkunft) => {
-    const bereich = bd.zuordnung[p.id] || bd.bereiche.find((b) => b.basis === p.id)?.id || SAMMELBEREICH;
+    const ids = new Set(bd.bereiche.map((b) => b.id));
+    const ziel = bd.zuordnung[p.id] || bd.bereiche.find((b) => b.basis === p.id)?.id;
+    const bereich = ids.has(ziel) ? ziel : ids.has(SAMMELBEREICH) ? SAMMELBEREICH : bd.bereiche.at(-1)?.id;
     const quellen = Object.fromEntries((p.sources || []).map((s) => [s.id, s]));
     const bild = p.image === false ? null : p.image?.thumb ? p.image : (p.sources || []).find((s) => s.image?.thumb)?.image;
     pakete.push({

@@ -1,6 +1,6 @@
 // Offline-Fähigkeit nur für /v2/ – eigener Cache-Name, berührt die erste Version nicht.
 // Bei Änderungen an der App VERSION erhöhen.
-const VERSION = "wt2-2";
+const VERSION = "wt2-3";
 const SHELL = [
   "./", "index.html", "styles.css", "app.js", "kern.js", "daten.js", "github.js", "data/demo.json", "manifest.webmanifest",
   "fonts/jost-latin.woff2", "fonts/jost-latin-ext.woff2", "icons/icon.svg", "icons/icon-192.png", "icons/icon-180.png",

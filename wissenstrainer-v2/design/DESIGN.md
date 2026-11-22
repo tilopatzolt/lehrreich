@@ -172,12 +172,33 @@ Alle Maße für 390 × 844 px. Reihenfolge jeweils von oben nach unten. „Bild-
 1. **Kopf** – Innenabstand 24 px 20 px 0. Links Bild-Platz „Figur klein“ (Kreis 60 × 60 px, Fläche `--vertieft`), antippbar, öffnet „Mein Fortschritt“. 14 px daneben: „Heute: 12 Karten“ (26 / 700), darunter „2 Runden à 7“ (16 / 500, `--text-neben`).
 2. **Hauptknopf „Lernen“** – Abstand oben 16 px, Seitenrand 20 px. Startet die Lernrunde.
 3. **Textlink „14 neue Karten zum Sichten“** – Abstand oben 16 px, unten 8 px. Nur zeigen, wenn es Karten zum Sichten gibt.
-4. **Landkarte** – volle Breite, randlos, füllt den Rest bis zur Navigation (bei 844 px Höhe: 568 px). Fläche `--welt-grund`, flach. Wenn die Bereiche nicht passen, rollt nur die Landkarte.
-   - Der Weg ist flach: ein 12 px breiter Strich in `--weg` mit runden Enden, als Inline-SVG über die ganze Landkarte (viewBox 0 0 390 568, Pfad `M0 80H390M70 80C70 170 200 190 195 290S110 400 115 480`). Er liegt zuunterst.
-   - Bild-Platz „Laterne“: Reihe aus 7 Laternen (je 30 × 58 px, Abstand 19 px), links 33 px, oben 22 px. Eine je Wochentag, an = an diesem Tag gelernt.
-   - Je Bereich ein antippbares Feld, 110 px breit: Bild-Platz „Bereich“ (110 × 110 px), 3 px darunter der Name (13 / 600, mittig, höchstens 2 Zeilen). Darüber bei Bedarf das Fähnchen.
-   - Plätze in drei Spalten, leicht versetzt. Position (links / oben) in der Landkarte: 14 / 96 · 140 / 110 · 266 / 92 · 14 / 248 · 140 / 266 · 266 / 250 · 60 / 408. Weitere Bereiche setzen das Muster fort (Spalten bei 14, 140, 266; Zeilenabstand etwa 156 px).
+4. **Landkarte** – volle Breite, randlos, vom Textlink bis zur Navigation (bei 844 px Höhe sind 568 px sichtbar). **Seit 22.11.2026 ein festes Hintergrundbild im Stil „Filz-Spielteppich“ statt einer flachen Fläche.** Die Karte ist länger als der Bildschirm und rollt senkrecht; Kopf und Navigation bleiben stehen. Beim Öffnen steht sie ganz oben (Fußweg mit Laternen sichtbar).
+   - **Aufbau:** ein Behälter mit `position: relative`, Breite 100 %, `aspect-ratio` = Breite / Höhe des Bildes. Zuunterst das Bild `welt-tag.webp` bzw. `welt-nacht.webp` (`width: 100 %; height: 100 %`), darüber alles andere mit `position: absolute`. Wiese, Wege, Bauplätze, Bäume, Fluss, Steg, Kisten und Boot sind Teil des Bildes – die App zeichnet keinen Weg mehr.
+   - **Deckungsgleichheit:** Alle Positionen und Größen auf der Karte stehen in **Prozent des Behälters** (waagerecht in % der Kartenbreite, senkrecht in % der Kartenhöhe), nie in Pixeln. Die Werte stehen im Code an genau einer Stelle (Liste `KARTEN_PLAETZE`) und entsprechen der Tabelle „Landkarte: Plätze“ unten. Tag- und Nacht-Bild haben dieselbe Größe und dieselbe Lage aller Plätze; beim Umschalten wird nur das Bild getauscht.
+   - **Bereich:** je Bereich ein antippbares Feld auf seinem festen Bauplatz. Das Bereich-Bild ist quadratisch; es steht mit der Unterkante seiner Sockelplatte (bei 90 % der Bildhöhe) auf dem Ankerpunkt des Platzes, waagerecht mittig. Darüber bei Bedarf das Fähnchen. Welcher Bereich auf welchem Platz steht, ist fest zugeordnet.
+   - **Namensschild:** direkt unter dem Bereich-Bild, mittig: flaches Schild, Fläche `--flaeche`, Ecke 6 px, Innenabstand 2 px 8 px, Schrift 13 / 600 in `--text`, höchstens 2 Zeilen. Schrift direkt auf dem Filz wäre zu schlecht lesbar.
+   - **Laternen:** 7 Stück in einer Reihe auf dem Fußweg oben, Fuß auf der Wegmitte. Eine je Wochentag, an = an diesem Tag gelernt.
+   - **Sammelbereich „Bildungsreise“:** Steg, Kisten und Segelboot unten am Fluss. Bereiche ohne eigenen Bauplatz (später neu angelegte) erscheinen nicht als Gebäude, sondern hier. Über Steg und Boot liegt ein unsichtbares antippbares Feld; daran sitzt das Fähnchen mit der Summe der fälligen Karten dieser Bereiche. Ein Tipp öffnet ein Blatt von unten „Bildungsreise“ mit einer Zeile je Bereich (Bild der Kennung `allgemein` in 48 × 48 px, Name, Nebentext wie „3 fällig“); Tipp auf eine Zeile öffnet den Bildschirm „Bereich“. Gibt es keinen solchen Bereich, ist das Feld nicht antippbar. *Verhalten ist ein Vorschlag von Claude – siehe Abschnitt 14.*
    - Tipp auf einen Bereich öffnet den Bildschirm „Bereich“.
+
+   **Landkarte: Plätze** – gemessen am fertigen Bild (22.11.2026). x in % der Kartenbreite, y in % der Kartenhöhe. Das Nacht-Bild weicht an keinem Platz um mehr als 0,15 % der Breite vom Tag-Bild ab.
+
+   | Eintrag | Wert |
+   |---|---|
+   | Karte | `welt-tag.webp` und `welt-nacht.webp`, je 1170 × 1837 px → `aspect-ratio: 1170 / 1837`. Bei 390 px Breite ist die Karte 612 px hoch (sichtbar 568 px, sie rollt also ein Stück). |
+   | Bauplatz 1 – Schule | Ankerpunkt x 18,2 · y 31,3 |
+   | Bauplatz 2 – Lehrkräfte | x 50,5 · y 31,4 |
+   | Bauplatz 3 – Universitäten | x 82,9 · y 31,3 |
+   | Bauplatz 4 – Senatsverwaltung | x 21,2 · y 56,7 |
+   | Bauplatz 5 – Recht | x 50,3 · y 56,7 |
+   | Bauplatz 6 – Schüler:innen | x 79,3 · y 56,7 |
+   | Bauplatz 7 – Lebenslanges Lernen | x 22,0 · y 74,0 |
+   | Bereich-Bild | Breite 25 % der Kartenbreite (97,5 px bei 390 px), quadratisch. `left: x%; top: y%; width: 25%; aspect-ratio: 1; transform: translate(-50%, -90%)` – so steht die Sockelplatte auf dem Ankerpunkt. |
+   | Namensschild | `left: x%; top: y%; margin-top: 2.5%; transform: translateX(-50%)` – beginnt an der Unterkante des Bereich-Bilds (Prozent beim Außenabstand beziehen sich auf die Kartenbreite). |
+   | Laterne 1 bis 7 | Fußpunkt y 12,8 · x 12,3 / 24,9 / 37,4 / 50,0 / 62,6 / 75,2 / 87,7. Breite 7,7 % der Kartenbreite (30 px bei 390 px), Seitenverhältnis 90 : 174. `transform: translate(-50%, -94.8%)` – der Fuß sitzt im Bild bei y 165 von 174. Die Laternen stehen damit auf der Mitte des Fußwegs und passen oben vollständig ins Bild. |
+   | Sammelbereich „Bildungsreise“ | antippbares Feld: links 38,1 · oben 80,1 · Breite 44,1 · Höhe 16,3 (umfasst Kisten, Steg und Segelboot). Fähnchen an der rechten oberen Ecke des Felds. |
+
+   Geprüft mit einer Probe: alle 7 Gebäude und alle Laternen wurden mit genau diesen Werten auf Tag- und Nacht-Bild gelegt (`10 Entwürfe/ChatGPT/Landschaft/Probe - Landkarte fertig.png`, rechts mit eingeblendeten Ankerpunkten).
 5. **Navigation**, „Welt“ aktiv.
 
 Nacht: Farben und Bilder nach Abschnitt 9; Hauptknopf mit Lichtschein.
@@ -230,7 +251,7 @@ Keine Statistik, keine Prozentzahlen, keine Sterne, kein Konfetti.
    - je fertigem Paket ein Buch-Bild (18 × 48 px) auf den Regalböden, von links nach rechts gefüllt;
    - die Figur (170 × 170 px), unten mittig;
    - links unten bis zu 3 offene Bücher (44 × 32 px) für fast fertige Pakete, antippbar über eine Tippfläche von 48 px.
-   Die genauen Stellflächen im Regal werden festgelegt, sobald das Regal-Bild vorliegt; bis dahin zwei Reihen mit Unterkante bei y 96 und y 156, von x 24 bis x 326.
+   Stellflächen im Regal-Bild (scharfe Fassung vom 22.11.2026 nachmittags, Anzeige 350 × 300): Oberkante des mittleren Bretts bei y 138, des unteren Bretts bei y 235; nutzbare Breite x 38 bis x 310. Ein Buch-Bild (18 × 48) hat unten 4 px Luft und wird deshalb mit seiner Unterkante auf y 142 (obere Reihe) bzw. y 239 (untere Reihe) gesetzt, 15 Bücher je Reihe ab x 40 im Abstand von 17 px. Das offene Buch (44 × 32) hat unten 5 px Luft: Unterkante auf y 143 bzw. y 240. Wird das Regal-Bild ersetzt, diese Werte neu messen.
 3. 16 px darunter mittig „Noch 1 Bereich ganz lernen bis Stufe 3“ (15 / 500, `--text-neben`).
 4. 24 px darunter Zwischenüberschrift „Fast fertig“ (17 / 700), 12 px darunter die Zeilen: „Ganztag – noch 4 Karten“, „Inklusion – noch 9 Karten“. Tipp auf eine Zeile startet das Lernen dieses Pakets.
 5. **Navigation**, „Üben“ aktiv.
@@ -251,6 +272,8 @@ Sichten, Hinzufügen (Blatt von unten), Paket-Seite, Üben und Mehr folgen im Au
 
 Figur, Gebäude, Laternen, Regal, Bücher und Gaben sind Bilddateien im Stil „plastisches Holzspielzeug“ (08, Abschnitt 10). Sie entstehen in einem eigenen Arbeitsgang (ChatGPT, siehe „13 Bildliste.md“) und werden fertig zugeschnitten geliefert. Jede Stufe und jede Tag- oder Nacht-Fassung ist ein Einzelbild in festem Format und Ausschnitt.
 
+**Die fertigen Dateien liegen im Ordner `bilder/` neben dieser Datei** (Stand 22.11.2026: alle 76 Dateien, einschließlich der beiden Bilder der Landkarte). Dieser Ordner wird unverändert als `bilder/` in die App übernommen; nichts umbenennen.
+
 ### Format
 
 - **WebP mit durchsichtigem Hintergrund**, sRGB, ohne Metadaten. Kein Boden, kein Schlagschatten, kein Lichtschein im Bild.
@@ -263,9 +286,10 @@ Figur, Gebäude, Laternen, Regal, Bücher und Gaben sind Bilddateien im Stil „
 
 | Bild-Art | Anzeige (px) | Datei (px) | Standlinie in der Datei |
 |---|---|---|---|
-| Bereich | 110 × 110 auf der Landkarte; 220 × 220 im Bereich ohne Foto | 660 × 660 | Unterkante der Sockelplatte bei y 594, waagerecht mittig |
+| Landkarte | volle Breite, 612 px hoch bei 390 px Breite (rollt) | 1170 × 1837 | – (Hintergrund, ohne Transparenz) |
+| Bereich | auf der Landkarte in % der Kartenbreite (siehe 7.1, rund 100 × 100 bei 390 px); 220 × 220 im Bereich ohne Foto | 660 × 660 | Unterkante der Sockelplatte bei y 594, waagerecht mittig |
 | Figur | Kreis 60 × 60 (Welt) · 110 × 110 (Üben) · 170 × 170 (Mein Fortschritt) · 220 × 220 (Runde geschafft) | 660 × 660 | Standfläche bei y 594, Mittelachse bei x 330 |
-| Laterne | 30 × 58 | 90 × 174 | Fuß bei y 171 |
+| Laterne | 30 × 58 (auf der Landkarte 7,7 % der Kartenbreite) | 90 × 174 | Fuß bei y 165 |
 | Regal | 350 × 300 | 1050 × 900 | füllt die Fläche |
 | Buch | 18 × 48 | 54 × 144 | Unterkante = Bildkante |
 | Offenes Buch | 44 × 32 | 132 × 96 | Unterkante = Bildkante |
@@ -302,6 +326,8 @@ Der Dateiname wird aus dem Zustand gebildet. Ein eigenes Nacht-Bild gibt es nur 
 | an | `laterne-an-tag.webp` | `laterne-an-nacht.webp` mit `filter: var(--schein-bild)` |
 | aus | `laterne-aus-tag.webp` | dieselbe Datei mit Nacht-Filter |
 
+**Landkarte** – `welt-tag.webp` bei Tag, `welt-nacht.webp` bei Nacht, beide ohne Filter. Einzige Bilder ohne durchsichtigen Hintergrund; Richtwert je Datei unter 700 KB (Stand: 344 KB und 173 KB). Beide Dateien haben exakt dieselbe Größe; alle Plätze liegen an derselben Stelle.
+
 **Regal, Bücher, Gaben** – je eine Datei (`regal.webp`, `buch-1.webp` bis `buch-4.webp`, `buch-offen.webp`, `gabe-1.webp` bis `gabe-4.webp`); nachts mit Nacht-Filter. Die Buchfarbe wechselt reihum.
 
 Umsetzung:
@@ -312,11 +338,11 @@ Umsetzung:
 ### Wenn ein Bild fehlt
 
 Der Reihe nach:
-1. Fehlt das Nacht-Bild: Tag-Bild mit Nacht-Filter.
+1. Fehlt das Nacht-Bild: Tag-Bild mit Nacht-Filter. Fehlt das Bild der Landkarte: Fläche `--welt-grund` im selben Seitenverhältnis; Bereiche, Laternen und Sammelbereich bleiben an ihren Prozent-Plätzen.
 2. Hat ein Bereich keine eigenen Bilder (z. B. ein neu angelegter): die Bilder der Kennung `allgemein`.
 3. Fehlt auch das: **Platzhalter** – Fläche `--vertieft` in der Größe des Platzes, Ecke 10 px (Figur klein: Kreis), mittig der Name des Platzes in 13 px / 600, `--text-neben`. Kein gestrichelter Rahmen. Beim Bereich zeigt der Platzhalter zusätzlich die Stufe als Wort („teils gelernt“), damit die Logik prüfbar ist. Laterne: Kreis 20 px auf einem 4 px breiten Stab; an = `--lack-gelb` (Nacht: `--licht` mit `--schein-klotz`), aus = `--holz`.
 
-Fehlende Dateien erkennt die App über `onerror` am Bild. **Zum Start gibt es noch kein einziges Bild: Die App muss vollständig mit Platzhaltern funktionieren.**
+Fehlende Dateien erkennt die App über `onerror` am Bild. **Die App muss auch ganz ohne Bilder vollständig mit Platzhaltern funktionieren** – einzelne Dateien können fehlen oder später dazukommen.
 
 ## 10. Fotos
 
@@ -356,6 +382,7 @@ Fehlende Dateien erkennt die App über `onerror` am Bild. **Zum Start gibt es no
 - [ ] Jeder Text mindestens 13 px; Text auf Grund mindestens 4,5:1.
 - [ ] Alles Antippbare mindestens 48 × 48 px.
 - [ ] Bild-Plätze haben die Größen aus Abschnitt 9; die Regeln für den Tausch stecken in genau einer Funktion.
+- [ ] Landkarte: Bei 320, 390 und 430 px Breite stehen alle 7 Gebäude mit der Sockelplatte auf ihrem Bauplatz und alle Laternen auf dem Fußweg – je Tag und Nacht als Bildschirmfoto, einmal mit eingeblendeten Ankerpunkten.
 - [ ] Jede Stufe und jeder Modus lässt sich mit fehlenden Bildern durchspielen (Platzhalter erscheinen, nichts bricht).
 - [ ] Beim Tausch von Stufe oder Tag/Nacht springt kein Bild.
 - [ ] Punkt für Punkt gegen die Verbotsliste in 01, Teil B geprüft.
@@ -363,6 +390,8 @@ Fehlende Dateien erkennt die App über `onerror` am Bild. **Zum Start gibt es no
 ## 14. Offen (nicht selbst entscheiden, nachfragen)
 
 - Name der App und App-Symbol.
+- Sammelbereich „Bildungsreise“: Verhalten beim Antippen (Vorschlag in 7.1: Blatt mit Liste der Bereiche ohne Bauplatz).
+- Ob die Figur zusätzlich auf der Landkarte steht oder wie bisher nur im Kopf.
 - Wohin Einordnung, Debatten-Tipp und „Im Original“ wandern, die die alte Rückseite gezeigt hat. Die neue Karte zeigt nur Antwort und Quelle.
 - Ob „Automatisch“ dem Gerät folgt oder der Uhrzeit.
 - Die Sätze auf „Runde geschafft“ je Bereich und Stufe.

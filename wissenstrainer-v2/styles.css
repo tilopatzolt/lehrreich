@@ -57,8 +57,6 @@
   --knopf-hoehe: 56px;
   --tipp-min: 48px;
   --nav-hoehe: 72px;
-  /* Landkarte: 1 Einheit = 1 px bei 390 px Breite, auf schmaleren Geräten kleiner */
-  --u: calc(min(100vw, 390px) / 390);
 }
 
 [data-theme="nacht"] {
@@ -173,7 +171,7 @@ svg.ic { width: 24px; height: 24px; flex: none; }
 /* ---------- Bilder und Platzhalter ---------- */
 .bild { position: relative; display: inline-block; flex: none; }
 /* Die Figur wächst über die Darstellung: Stufe 1–7 = 0,70 … 1,00 */
-.bild.figur > img, .bild.figur > .platz { transform: scale(var(--skala, 1)); transform-origin: bottom center; }
+.bild-figur > img, .bild-figur > .platz { transform: scale(var(--skala, 1)); transform-origin: bottom center; }
 .bild img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transition: opacity 200ms; }
 .platz {
   position: absolute; inset: 0; border-radius: var(--ecke); background: var(--flaeche); color: var(--text-neben);
@@ -202,19 +200,27 @@ svg.ic { width: 24px; height: 24px; flex: none; }
 .welt-start { padding: 16px var(--rand) 0; }
 .welt-start .textlink { padding: 16px 0 8px; }
 .karte-land { flex: 1; min-height: 0; overflow-y: auto; background: var(--welt-grund); margin-top: 16px; transition: background-color 200ms; }
-.land { position: relative; width: calc(var(--u) * 390); margin: 0 auto; }
-.land .weg { position: absolute; left: 0; top: 0; width: calc(var(--u) * 390); height: calc(var(--u) * 568); }
-.land .weg path { stroke: var(--weg); stroke-width: 12; stroke-linecap: round; fill: none; }
-.laternen { position: absolute; left: calc(var(--u) * 33); top: calc(var(--u) * 22); display: flex; gap: calc(var(--u) * 19); }
-.laternen .bild { width: calc(var(--u) * 30); height: calc(var(--u) * 58); }
-.ort { position: absolute; width: calc(var(--u) * 110); display: flex; flex-direction: column; align-items: center; color: var(--text); text-decoration: none; }
-.ort .bild { width: calc(var(--u) * 110); height: calc(var(--u) * 110); }
-.ort .name { margin-top: 3px; font-size: 13px; font-weight: 600; line-height: 1.15; text-align: center; max-height: 2.3em; overflow: hidden; }
-/* Fähnchen „heute fällig“ – Maße bezogen auf 110 × 110 */
-.faehnchen { position: absolute; left: 0; top: 0; width: calc(var(--u) * 110); height: calc(var(--u) * 110); pointer-events: none; }
-.faehnchen .mast { position: absolute; left: calc(var(--u) * 85); top: calc(var(--u) * 3); width: 2px; height: calc(var(--u) * 41); background: var(--text); }
+/* Landkarte: Filzbild 1170 × 1837; alle Plätze in % (DESIGN.md 7.1) */
+.land { position: relative; width: 100%; aspect-ratio: 1170 / 1837; }
+.land > .bild img { object-fit: cover; }
+.platz-welt { position: absolute; inset: 0; background: var(--welt-grund); }
+.laterne { position: absolute; width: 7.7%; aspect-ratio: 90 / 174; transform: translate(-50%, -94.8%); }
+.ort { position: absolute; width: 25%; aspect-ratio: 1; transform: translate(-50%, -90%); display: block; }
+.schild {
+  position: absolute; margin-top: 2.5%; transform: translateX(-50%); max-width: 30%; padding: 2px 8px; border-radius: 6px;
+  background: var(--flaeche); color: var(--text); font-size: 13px; font-weight: 600; line-height: 1.15; text-align: center; text-decoration: none;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; width: max-content;
+}
+.boot { position: absolute; background: transparent; border-radius: var(--ecke); }
+.boot:disabled { cursor: default; }
+/* Fähnchen „heute fällig“ – Maße bezogen auf die Bildfläche 110 × 110 */
+.faehnchen { position: absolute; inset: 0; pointer-events: none; }
+.faehnchen .mast { position: absolute; left: 77.3%; top: 2.7%; width: 2px; height: 37.3%; background: var(--text); }
+.boot .faehnchen { inset: auto; right: 4%; top: -44px; width: 25px; height: 44px; }
+.boot .faehnchen .mast { left: 0; top: 0; height: 100%; }
+.boot .faehnchen .fahne { left: 1px; top: 0; }
 .faehnchen .fahne {
-  position: absolute; left: calc(var(--u) * 86); top: calc(var(--u) * 3); min-width: 21px; height: 16px; padding: 0 3px; border-radius: 2px;
+  position: absolute; left: 78.2%; top: 2.7%; min-width: 21px; height: 16px; padding: 0 3px; border-radius: 2px;
   background: var(--haupt); color: var(--auf-haupt); font-size: 13px; font-weight: 700; line-height: 16px; text-align: center; box-shadow: var(--schein-klotz);
 }
 
@@ -298,16 +304,10 @@ svg.ic { width: 24px; height: 24px; flex: none; }
 
 /* ---------- Mein Fortschritt ---------- */
 .bibliothek { position: relative; width: 100%; max-width: 350px; aspect-ratio: 350 / 300; margin: 16px auto 0; border-radius: var(--ecke-karte); background: var(--vertieft); overflow: hidden; }
-.bibliothek > .regal { position: absolute; inset: 0; }
-.bibliothek .regal .platz { border-radius: 0; background: transparent; justify-content: flex-start; padding-top: 10px; }
-.bibliothek .boden { position: absolute; left: 6.9%; right: 6.9%; height: 6px; border-radius: 2px; background: var(--holz); }
-.bibliothek .buecher { position: absolute; left: 6.9%; right: 6.9%; display: flex; gap: 3px; align-items: flex-end; }
-.bibliothek .buecher .bild { width: 18px; height: 48px; }
-.bibliothek .figur-gross { position: absolute; left: 50%; bottom: 0; width: 170px; height: 170px; transform: translateX(-50%); }
-.bibliothek .figur-gross .bild { width: 170px; height: 170px; }
-.bibliothek .offen { position: absolute; left: 12px; bottom: 8px; display: flex; gap: 4px; }
-.bibliothek .offen button { width: 48px; height: 48px; display: grid; place-items: end center; }
-.bibliothek .offen .bild { width: 44px; height: 32px; }
+.bibliothek > .bild .platz { border-radius: 0; background: transparent; justify-content: flex-start; padding-top: 10px; }
+.bibliothek .buch { position: absolute; }
+.bibliothek .figur-gross { position: absolute; left: 25.7%; bottom: 0; width: 48.6%; height: 56.7%; }
+.bibliothek .offen { position: absolute; display: grid; place-items: end center; }
 .mittig { text-align: center; }
 
 /* ---------- Üben ---------- */

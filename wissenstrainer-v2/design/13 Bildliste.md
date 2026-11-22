@@ -5,7 +5,10 @@ Stand: 21.11.2026, abends · gehört zu 08 Stil-Vorgabe (Abschnitt 10) und DESIG
 
 ## Auf einen Blick
 
-- **74 Bilder** insgesamt. Für den Start reichen **52** (Lieferung 1); die übrigen 22 (Lieferung 2) sind die Figur ab Stufe 3, das Ersatz-Gebäude für neue Bereiche und zwei weitere Gaben.
+**Stand 22.11.2026 abends: Alle 74 Bilder liegen fertig zugeschnitten als WebP in einem einzigen Ordner: `bilder/` (direkt im Ordner Wissenstrainer, neben dieser Datei).** Der Ordner enthält nur, was die App braucht, unter genau den Dateinamen dieser Liste, und wird unverändert als `bilder/` in die App übernommen. Seit dem späten Abend liegen dort auch die beiden Bilder der Landkarte (`welt-tag.webp`, `welt-nacht.webp`) – damit sind alle 76 Bilder da. Kontaktbögen, Rohbilder und Vorlagen bleiben in `10 Entwürfe/ChatGPT/` (Kontaktbögen in `Serie/`). Die beiden Nachtbilder von Stufe 6 und 7, bei denen zuerst die Laterne fehlte, sind am selben Abend ersetzt worden.
+
+- **Neu am 22.11.2026: die Landkarte „Welt“ als Hintergrundbild** (Filz-Spielteppich, Tag und Nacht) – 2 weitere Bilder, siehe Abschnitt „Landschaft“. Damit sind es 76.
+- **74 Bilder** ohne die Landkarte. Für den Start reichen **52** (Lieferung 1); die übrigen 22 (Lieferung 2) sind die Figur ab Stufe 3, das Ersatz-Gebäude für neue Bereiche und zwei weitere Gaben.
 - **Jede Stufe ist ein Einzelbild** in festem Format und Ausschnitt, mit durchsichtigem Hintergrund. Keine Sammelbilder wie im Test.
 - **Stilvorlage sind die vier Vorlagen A bis D** – die Testbilder, umgefärbt auf die Erzgebirge-Farben. Die Figur darin ist die verbindliche Vorlage für die Proportionen.
 - Palette „Erzgebirge“: Enzianblau, Krapprot, Senfgelb, Moosgrün und Holz.
@@ -29,7 +32,7 @@ Moosgrün kommt in den Vorlagen A bis D nicht vor (die Testbilder enthielten kei
 ## Wer macht was
 
 1. **Tilo** erzeugt die Bilder in ChatGPT und legt sie als PNG unter dem Namen aus der Liste (Endung `.png` statt `.webp`) in `10 Entwürfe/ChatGPT/Serie/`.
-2. **Claude** prüft jedes Bild gegen die Prüfliste unten, schneidet es auf Format und Ausschnitt zu, wandelt es in WebP um und legt einen Kontaktbogen an (alle Stufen, Tag und Nacht nebeneinander). Abweichungen kommen als Liste zurück.
+2. **Claude** prüft jedes Bild gegen die Prüfliste unten, schneidet es auf Format und Ausschnitt zu, wandelt es in WebP um, legt es unter dem Namen aus der Liste in `bilder/` ab und legt einen Kontaktbogen an (alle Stufen, Tag und Nacht nebeneinander). Abweichungen kommen als Liste zurück.
 
 ## Festes Format und fester Ausschnitt
 
@@ -38,7 +41,7 @@ Gilt für jedes Bild einer Art gleich – so springt in der App nichts, wenn Stu
 | Art | Format beim Erzeugen | Ausschnitt |
 |---|---|---|
 | Gebäude | quadratisch | Unterkante der Sockelplatte bei 90 % der Bildhöhe · größte Breite 80 % der Bildbreite · waagerecht mittig · Dachfirst bei etwa 25 % · Wimpel höchstens bis 6 % |
-| Figur | quadratisch | Standfläche bei 90 % der Bildhöhe · Oberkante des Kopfes bei 26 % · Mittelachse des Körpers bei 50 % · Standbreite 35 % der Bildbreite |
+| Figur | quadratisch | Standfläche bei 90 % der Bildhöhe · Mittelachse des Körpers bei 50 % · Standbreite 32 % der Bildbreite (seit 22.11.2026, vorher 35 %; Kopf-Oberkante etwa 20 %, mit Mütze etwa 8 %) – diesen Zuschnitt stellt Claude her, ChatGPT muss ihn nicht treffen |
 | Laterne | hochkant | Fuß bei 95 %, Kappe bei 8 %, mittig |
 | Regal | quer | füllt 90 % der Bildbreite, mittig |
 | Buch | hochkant | füllt 85 % der Bildhöhe, mittig |
@@ -339,6 +342,36 @@ Gegenstände haben nie die Farbe des Körpers, vor dem sie stehen – deshalb di
 | 73 | `gabe-3.webp` | 96 × 96 | – | Tag (nachts abgedunkelt) | Runde geschafft: fällt in die Zuckertüte (Buntstift) | neu | 2 |
 | 74 | `gabe-4.webp` | 96 × 96 | – | Tag (nachts abgedunkelt) | Runde geschafft: fällt in die Zuckertüte (Radiergummi) | neu | 2 |
 
+### Landschaft (Landkarte „Welt“)
+
+Festes Hintergrundbild der Landkarte im Stil „Filz-Spielteppich“ (08, Abschnitt 5a). Gebäude, Laternen und Figur sind **nicht** im Bild; die App legt sie darauf. Rohteile und Tests liegen in `10 Entwürfe/ChatGPT/Landschaft`.
+
+| Nr. | Dateiname | Datei (px) | Stufe | Tag/Nacht | Verwendung | Entsteht aus | Lieferung |
+|---|---|---|---|---|---|---|---|
+| 75 | `welt-tag.webp` | 1170 × 1837 | – | Tag | Welt: Hintergrund der Landkarte, rollt | Einzelbild `Filzlandschaft mit Fluss und Holzsteg.png` (1024 × 1536); Claude hat oben 72 px Filzwiese ergänzt, damit die Laternen vollständig ins Bild passen | 1 |
+| 76 | `welt-nacht.webp` | 1170 × 1837 | – | Nacht | Welt: Hintergrund der Landkarte, rollt | oben (bis unter Reihe 2) der ChatGPT-Nachtteil `Nächtliche Filzlandschaft mit Lavendelpfaden.png`, passgenau auf das Tag-Bild gelegt; darunter das Tag-Bild, von Claude mit den Farben dieses Nachtteils umgefärbt | 1 |
+
+**Aufbau von oben nach unten:** waagerechter Fußweg über die ganze Breite (dort stehen die 7 Laternen) · davon ein geschwungener Weg nach unten · sieben Bauplätze (Reihe 1: drei, Reihe 2: drei, Reihe 3: einer links) · dazwischen Bäume, Büsche, Teich, Zäune, Bank · ganz unten ein Fluss mit Steg, Kisten und Segelboot (Sammelbereich „Bildungsreise“).
+
+**Stand 22.11.2026 spät: fertig.** Arbeitsbilder in voller Größe: `Landschaft/welt-tag (Arbeitsbild 1024).png` und `welt-nacht (Arbeitsbild 1024).png`. Die Plätze stehen in DESIGN.md (7.1); alle 7 Bauplätze liegen bei Tag und Nacht deckungsgleich (Abweichung höchstens 0,15 % der Bildbreite). Der zweite ChatGPT-Nachtteil (`Nächtliche Filzlandschaft mit Holzsteg.png`) wurde nicht verwendet: Dort sitzen Reihe 3 und der Fluss gut 11 % der Bildbreite tiefer als im Tag-Bild. Die fertige Karte ist mit 612 px Höhe (bei 390 px Breite) nur wenig länger als der sichtbare Ausschnitt; der folgende Absatz und die Tabelle gelten für eine spätere, längere Fassung.
+
+**Zwei Teile, weil ChatGPT höchstens 2 : 3 liefert** (1024 × 1536): Teil „oben“ = Fußweg, Reihe 1 und 2. Teil „unten“ = nach unten verlängert mit Reihe 3 und Fluss. Claude legt beide passgenau übereinander, blendet die Naht in einem ruhigen Stück Wiese und prüft sie.
+
+**Was das Bild einhalten muss, damit App und Bild zusammenpassen** (gemessen an der Probe mit den Testbildern, Angaben in Prozent der Bildbreite):
+
+| Punkt | Vorgabe | Grund |
+|---|---|---|
+| Fußweg oben | Wegmitte etwa 20 % unter dem oberen Bildrand; darüber nur Wiese und flache Büsche | Eine Laterne ist 15 % hoch und steht auf der Wegmitte; im Testbild (Weg bei 13 %) ragte sie über den Rand |
+| Bauplätze | Ellipsen, etwa 20 bis 22 % breit, nur dezent hellere Wiese; Spalten bei etwa 18 / 50 / 82 % | Das Gebäude wird etwa 26 % breit gezeigt, seine Sockelplatte deckt den Platz |
+| Reihenabstand | Mitte zu Mitte mindestens 40 % | Gebäude (26 % hoch) plus Namensschild brauchen den Platz; im Testbild war Reihe 3 zu nah an Reihe 2 |
+| Unter jedem Platz | etwa 8 % frei von wichtigen Dingen | dort sitzt das Namensschild |
+| Naht | unter Reihe 2 ein ruhiges Band (nur Wiese und Weg), mindestens 10 % hoch | dort werden die beiden Teile verblendet |
+| Überlappung | Teil „unten“ zeigt oben noch einmal das untere Drittel von Teil „oben“ | so lassen sich die Teile ausrichten |
+| Nacht | dasselbe Bild, nur umgefärbt (lila Filz); kein Platz, Weg, Baum oder Boot wandert | Die App nutzt für Tag und Nacht dieselben Positionen |
+| Nicht im Bild | Gebäude, Laternen, Figuren, Schrift | legt die App darauf |
+
+**Nach dem Zusammensetzen** misst Claude die Mitte jedes Bauplatzes, die Wegmitte und den Sammelbereich im Bild und trägt die Werte in DESIGN.md (7.1, Tabelle „Landkarte: Plätze“) ein. Dieselbe Messung läuft über das Nacht-Bild; weicht ein Platz um mehr als 1 % der Bildbreite ab, wird das Nacht-Bild aus dem Tag-Bild umgefärbt.
+
 ## Zählung
 
 | Gruppe | Bilder | davon Lieferung 1 |
@@ -348,7 +381,8 @@ Gegenstände haben nie die Farbe des Körpers, vor dem sie stehen – deshalb di
 | Laternen | 3 | 3 |
 | Regal und Bücher | 6 | 6 |
 | Gaben | 4 | 2 |
-| **Summe** | **74** | **52** |
+| Landkarte (Tag, Nacht) | 2 | 2 |
+| **Summe** | **76** | **54** |
 
 ## Offen
 

@@ -58,7 +58,8 @@ Anleitung: `wissenstrainer-v2/README.md`.
   Lernstand auf Wunsch zu übernehmen (`github.js`).
 - Bereiche: `bereiche.json` im privaten Repo (Bereiche mit Basispaket, Zuordnung Paket → Bereich);
   Pakete und Ordner bleiben im Format der ersten Version, die Auswertung ist unverändert.
-  Sammelbereich `bauplatz` („Bauplatz und Segelboot“) steht immer zuletzt.
+  Sammelbereich `bildungsreise` („Bildungsreise“, Boot am Steg) sammelt Pakete ohne Zuordnung und
+  alle Bereiche ohne Bauplatz; Bauplätze fest je Bereich in `KARTEN_PLAETZE` (`app.js`).
 - Bilder: nur über `bildpfad()` in `app.js`; Dateien in `img/` nach `design/13 Bildliste.md`.
 - Bei Änderungen `APP_STAND` in `app.js` und `VERSION` in `sw.js` erhöhen.
 - Logik-Tests: `node wissenstrainer-v2/test/kern.test.mjs` und `test/github.test.mjs`.
