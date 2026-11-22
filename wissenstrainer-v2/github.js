@@ -65,6 +65,17 @@ async function schreiben(repo, pfad, base64, nachricht) {
   }
 }
 
+async function loeschen(repo, pfad, nachricht) {
+  const alt = await gh(repo, `contents/${kodiert(pfad)}${ref()}`, { cache: "no-store" });
+  if (alt.status === 404) return;
+  if (!alt.ok) throw new Error(`HTTP ${alt.status}`);
+  const { sha } = await alt.json();
+  const res = await gh(repo, `contents/${kodiert(pfad)}`, {
+    method: "DELETE", body: JSON.stringify({ message: nachricht, sha, branch: verbindung.branch }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
 export function textBase64(text) {
   const bytes = new TextEncoder().encode(text);
   let s = "";
@@ -142,6 +153,7 @@ export async function paketZuordnen(pid, bereichId, paketName, bereichName) {
 export function umwandeln(bd, privat, oeffentlich) {
   const pakete = [];
   const karten = [];
+  const geteilt = new Set(oeffentlich.filter((p) => p.published_from_private).map((p) => p.id));
   const nimm = (p, herkunft) => {
     const ids = new Set(bd.bereiche.map((b) => b.id));
     const ziel = bd.zuordnung[p.id] || bd.bereiche.find((b) => b.basis === p.id)?.id;
@@ -151,7 +163,8 @@ export function umwandeln(bd, privat, oeffentlich) {
     pakete.push({
       id: p.id, bereich, name: p.name, herkunft,
       basis: bd.bereiche.some((b) => b.basis === p.id),
-      ...(bild ? { foto: { thumb: bild.thumb, creator: bild.creator, license: bild.license, page: bild.page } } : {}),
+      ...(herkunft === "privat" && geteilt.has(p.id) ? { geteilt: true } : {}),
+      ...(bild ? { foto: { thumb: bild.thumb, creator: bild.creator, license: bild.license, page: bild.page, query: bild.query } } : {}),
       quellen: (p.sources || []).filter((s) => s.status !== "fehler").map((s) => ({ titel: s.title || s.file, herausgeber: s.organisation || "" })),
     });
     for (const c of p.cards || []) {
@@ -160,7 +173,7 @@ export function umwandeln(bd, privat, oeffentlich) {
         id: c.id, paket: p.id, frage: c.front, antwort: c.back,
         quelle: q ? [q.organisation, q.title].filter(Boolean).join(": ") : "",
         ...(c.tipp ? { tipp: c.tipp } : {}), ...(c.explanation ? { einordnung: c.explanation } : {}),
-        ...(c.quote ? { zitat: c.quote } : {}), ...(c.type ? { typ: c.type } : {}),
+        ...(c.quote ? { zitat: c.quote } : {}), ...(c.type ? { typ: c.type } : {}), ...(c.topic ? { thema: c.topic } : {}),
       });
     }
   };
@@ -213,6 +226,62 @@ export async function hochladen({ bereich, ziel, titel, text, datei, vorhandeneI
   await schreiben(verbindung.privatRepo, `${PRIVAT.docs}/${ordner}/${name}`, inhalt, `Wissenstrainer: ${name} → ${ordner}`);
   return { ordner, id: paketId(ordner) };
 }
+
+/* ---------- Bild, Teilen ---------- */
+
+// Wo die Datei eines Pakets liegt (eigene Ablage) und wo seine geteilte Kopie liegt
+const paketPfad = (p) => p.herkunft === "oeffentlich"
+  ? { repo: verbindung.oeffentlichRepo, pfad: `${OEFFENTLICH.data}/${p.id}.json` }
+  : { repo: verbindung.privatRepo, pfad: `${PRIVAT.data}/${p.id}.json` };
+const kopiePfad = (p) => ({ repo: verbindung.oeffentlichRepo, pfad: `${OEFFENTLICH.data}/${p.id}.json` });
+
+// Bild eines Pakets speichern (false = bewusst kein Bild), auch in der geteilten Kopie
+export async function paketBildSpeichern(p, bild) {
+  const ziele = [paketPfad(p), ...(p.geteilt ? [kopiePfad(p)] : [])];
+  let geschrieben = 0;
+  for (const { repo, pfad } of ziele) {
+    const daten = await roh(repo, pfad);
+    if (!daten) continue;
+    daten.image = bild;
+    await schreiben(repo, pfad, textBase64(JSON.stringify(daten, null, 1) + "\n"), `Wissenstrainer: Bild für „${p.name}“ ${bild ? "gewählt" : "entfernt"}`);
+    geschrieben++;
+  }
+  if (!geschrieben) throw new Error("Das Paket hat noch keine Karten");
+}
+
+// Behaltene Karten eines privaten Pakets öffentlich teilen – nur Karten und Metadaten, keine Dokumente
+export async function paketTeilen(p, behalten, aenderungen) {
+  const quelle = await roh(verbindung.privatRepo, `${PRIVAT.data}/${p.id}.json`);
+  if (!quelle) throw new Error("Das Paket hat noch keine Karten");
+  const karten = quelle.cards.filter((c) => behalten.has(c.id)).map((c) => {
+    const a = aenderungen[c.id];
+    return a ? { ...c, front: a.frage || c.front, back: a.antwort || c.back } : c;
+  });
+  if (!karten.length) throw new Error("Noch keine behaltenen Karten");
+  const genutzt = new Set(karten.map((c) => c.source));
+  const kopie = {
+    version: 2, id: p.id, name: quelle.name, visibility: "oeffentlich", published_from_private: true,
+    updated: new Date().toISOString(),
+    sources: (quelle.sources || []).filter((s) => genutzt.has(s.id)).map((s) => ({
+      id: s.id, title: s.title, authors: s.authors, organisation: s.organisation, published: s.published,
+      doc_type: s.doc_type, summary: s.summary, core_thesis: s.core_thesis, added: s.added, status: "ok",
+      ...(s.image ? { image: s.image } : {}),
+      card_count: karten.filter((c) => c.source === s.id).length,
+    })),
+    ...(quelle.image !== undefined ? { image: quelle.image } : {}),
+    cards: karten,
+  };
+  const { repo, pfad } = kopiePfad(p);
+  await schreiben(repo, pfad, textBase64(JSON.stringify(kopie, null, 1) + "\n"), `Wissenstrainer: Paket „${p.name}“ geteilt`);
+}
+
+export async function paketNichtTeilen(p) {
+  const { repo, pfad } = kopiePfad(p);
+  await loeschen(repo, pfad, `Wissenstrainer: Paket „${p.name}“ nicht mehr geteilt`);
+}
+
+// Link zum öffentlichen Paket – die erste Version zeigt öffentliche Pakete auch ohne Schlüssel
+export const paketLink = (p) => `https://${verbindung.oeffentlichRepo.split("/")[0]}.github.io/${verbindung.oeffentlichRepo.split("/")[1]}/#/paket/${encodeURIComponent(p.id)}`;
 
 /* ---------- Lernstand aus der ersten Version ---------- */
 

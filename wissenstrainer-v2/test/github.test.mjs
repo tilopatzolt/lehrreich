@@ -31,6 +31,8 @@ assert.equal(p("klimageld").bereich, SAMMELBEREICH, "Zuordnung auf fehlenden Ber
 assert.equal(i.karten.filter((k) => k.id === "c1").length, 1, "geteilte Kopie nicht doppelt");
 assert.equal(p("qualitaetsstrategie-senat").foto.thumb, "t.jpg");
 assert.ok(p("grundlagen-senatsverwaltung").basis, "leeres Basispaket je Bereich");
+assert.ok(p("qualitaetsstrategie-senat").geteilt, "eigenes Paket mit öffentlicher Kopie gilt als geteilt");
+assert.ok(!p("flexmaster").geteilt);
 const c1 = i.karten.find((k) => k.id === "c1");
 assert.deepEqual([c1.frage, c1.antwort, c1.quelle, c1.tipp, c1.einordnung], ["F?", "A.", "SenBJF: Strategie", "Tipp", "Einordnung"]);
 
