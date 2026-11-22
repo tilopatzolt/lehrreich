@@ -11,9 +11,10 @@ import {
 import {
   verbunden, verbindung, verbindungSpeichern, trennen, pruefen, inhaltLaden, hochladen, ersteVersion,
   lernstandUebernehmen, bereicheStand, bereicheSpeichern, bereichAnlegen, paketId, SAMMELBEREICH, paketZuordnen,
+  paketBildSpeichern, paketTeilen, paketNichtTeilen, paketLink,
 } from "./github.js";
 
-const APP_STAND = "23.11.2026";
+const APP_STAND = "23.11.2026b";
 
 /* ============================================================
    Hilfen
@@ -173,7 +174,6 @@ function melden(text, aktion) {
   clearTimeout(meldungUhr);
   meldungUhr = setTimeout(() => el.classList.remove("an"), aktion ? 5000 : 2600);
 }
-const spaeter = (was) => melden(`${was} kommt im nächsten Schritt.`);
 
 function frage(titel, text, ja, tun) {
   blatt(`<h2 class="ue">${esc(titel)}</h2><p class="neben" style="margin-bottom:16px">${esc(text)}</p>
@@ -202,10 +202,10 @@ const routen = {
   welt: zeigeWelt, bereiche: zeigeBereiche, bereich: zeigeBereich, paket: zeigePaket,
   lernen: zeigeLernen, geschafft: zeigeGeschafft, fortschritt: zeigeFortschritt, ueben: zeigeUeben,
   mehr: zeigeMehr, sichten: zeigeSichten, verwalten: zeigeVerwalten, suche: zeigeSuche,
-  einstellungen: zeigeEinstellungen, sichern: zeigeSichern, verbindung: zeigeVerbindung,
+  einstellungen: zeigeEinstellungen, sichern: zeigeSichern, verbindung: zeigeVerbindung, zettel: zeigeZettel,
 };
 const REITER_VON = {
-  welt: "welt", bereich: "welt", paket: "welt", bereiche: "bereiche", ueben: "ueben", fortschritt: "ueben",
+  welt: "welt", bereich: "welt", paket: "welt", zettel: "welt", bereiche: "bereiche", ueben: "ueben", fortschritt: "ueben",
   mehr: "mehr", sichten: "mehr", verwalten: "mehr", suche: "mehr", einstellungen: "mehr", sichern: "mehr", verbindung: "mehr",
 };
 
@@ -409,9 +409,9 @@ function zeigePaket(v, id) {
       <div class="zeile" style="margin-top:${p.basis ? 12 : 8}px"><span>Im täglichen Lernplan</span>
         <label class="schalter"><input type="checkbox" id="im-plan" ${imPlan(p.id) ? "checked" : ""} aria-label="Im täglichen Lernplan"><i></i></label></div>
       <div class="knopf-reihe" style="margin-top:12px">
-        <button class="knopf zweit" data-spaeter="Weitergeben">Weitergeben</button>
-        <button class="knopf zweit" data-spaeter="Öffentlich teilen">Teilen</button>
-        <button class="knopf zweit" data-spaeter="Der Lernzettel">Lernzettel</button>
+        <button class="knopf zweit" data-weitergeben>Weitergeben</button>
+        <button class="knopf zweit" data-teilen>${p.geteilt || p.herkunft === "oeffentlich" ? "Öffentlich" : "Teilen"}</button>
+        <a class="knopf zweit" href="#/zettel/${encodeURIComponent(p.id)}">Lernzettel</a>
       </div>
       ${(p.quellen || []).length ? `<h2 class="zw abschnitt">Dokumente</h2>
         <div class="zeilen">${p.quellen.map((q) => `<div class="zeile"><span class="zeile-text">${esc(q.titel)}</span><span class="rechts">${esc(q.herausgeber || "")}</span></div>`).join("")}</div>` : ""}
@@ -420,9 +420,10 @@ function zeigePaket(v, id) {
         : `<p class="neben">Noch keine Karten.${p.basis ? " Dieses Basispaket wächst mit jedem Dokument, das du hinzufügst." : ""}</p>`}</div>
     </div>`;
   $("#im-plan", v).onchange = (e) => pausieren(p.id, !e.target.checked);
-  $("[data-bild]", v).onclick = () => spaeter("Die Bildauswahl");
+  $("[data-bild]", v).onclick = () => bildWaehlen(p);
+  $("[data-weitergeben]", v).onclick = () => weitergeben(p);
+  $("[data-teilen]", v).onclick = () => teilenBlatt(p);
   $("[data-bereich-aendern]", v)?.addEventListener("click", () => bereichAendern(p));
-  $$("[data-spaeter]", v).forEach((x) => x.onclick = () => spaeter(x.dataset.spaeter));
   $$("[data-karte]", v).forEach((x) => x.onclick = () => karteZeigen(karte(x.dataset.karte)));
   $("[data-leer]", v)?.addEventListener("click", (e) => { e.preventDefault(); melden("Erst Karten sichten, dann üben."); });
 }
@@ -450,6 +451,214 @@ function bereichAendern(p) {
       }
     });
   });
+}
+
+/* ---------- Bild wählen ---------- */
+
+// Freie Fotos aus Openverse und Wikimedia Commons (wie die Auswertung), abwechselnd aus beiden Quellen
+async function bilderSuchen(q) {
+  const json = async (url) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  };
+  const openverse = json(`https://api.openverse.org/v1/images/?${new URLSearchParams({
+    q, license_type: "all-cc", category: "photograph", aspect_ratio: "wide", mature: "false", page_size: "12",
+  })}`).then((d) => (d.results || []).filter((r) => r.thumbnail && r.url).map((r) => ({
+    query: q, thumb: r.thumbnail, url: r.url, title: r.title || "", creator: r.creator || "",
+    license: `${(r.license || "").toUpperCase()} ${r.license_version || ""}`.trim(),
+    license_url: r.license_url || "", page: r.foreign_landing_url || "",
+  })));
+  const ohneTags = (t) => String(t || "").replace(/<[^>]+>/g, "").trim();
+  const commons = json(`https://commons.wikimedia.org/w/api.php?${new URLSearchParams({
+    action: "query", format: "json", origin: "*", generator: "search", gsrnamespace: "6",
+    gsrsearch: `${q} filetype:bitmap`, gsrlimit: "12", prop: "imageinfo", iiprop: "url|extmetadata|size", iiurlwidth: "800",
+  })}`).then((d) => Object.values(d.query?.pages || {}).sort((a, b) => (a.index ?? 99) - (b.index ?? 99)).map((pg) => {
+    const info = pg.imageinfo?.[0] || {};
+    const meta = info.extmetadata || {};
+    if (!info.thumburl || (info.width || 0) < (info.height || 1)) return null; // nur Querformat
+    return {
+      query: q, thumb: info.thumburl, url: info.url || "",
+      title: ohneTags(meta.ObjectName?.value) || pg.title || "", creator: ohneTags(meta.Artist?.value).slice(0, 80),
+      license: ohneTags(meta.LicenseShortName?.value), license_url: meta.LicenseUrl?.value || "", page: info.descriptionurl || "",
+    };
+  }).filter(Boolean));
+  const erg = await Promise.allSettled([openverse, commons]);
+  if (erg.every((r) => r.status === "rejected")) throw new Error("Bildsuche nicht erreichbar");
+  const listen = erg.map((r) => (r.status === "fulfilled" ? r.value : []));
+  const gemischt = [];
+  for (let i = 0; i < Math.max(...listen.map((l) => l.length)); i++) listen.forEach((l) => l[i] && gemischt.push(l[i]));
+  return gemischt;
+}
+
+function bildWaehlen(p) {
+  if (!verbunden()) return melden("Erst unter „Mehr → Verbindung“ verbinden.");
+  if (!kartenVonPaket(p.id).length) return melden("Ein Bild gibt es, sobald das Paket Karten hat.");
+  blatt(`
+    <h2 class="ue">Bild für „${esc(p.name)}“</h2>
+    <form data-suche class="feld"><label for="b-q">Suchwörter (auf Englisch findet sich meist mehr)</label>
+      <input id="b-q" type="search" enterkeyhint="search" value="${esc(p.foto?.query || p.name)}"></form>
+    <div class="bildraster" data-raster></div>
+    <div class="knoepfe">
+      ${p.foto ? `<button class="knopf zweit" data-keins>Kein Bild</button>` : ""}
+      <button class="knopf zweit" data-zu>Abbrechen</button>
+    </div>`, (bl) => {
+    let treffer = [];
+    const raster = $("[data-raster]", bl);
+    const suchen = async () => {
+      const q = $("#b-q", bl).value.trim();
+      if (!q) return;
+      raster.innerHTML = `<p class="neben">Suche …</p>`;
+      try {
+        treffer = await bilderSuchen(q);
+      } catch (err) {
+        raster.innerHTML = `<p class="neben">${esc(err.message)}</p>`;
+        return;
+      }
+      raster.innerHTML = treffer.length
+        ? treffer.map((t, i) => `<button type="button" data-wahl="${i}" aria-label="${esc(t.title || "Foto")} wählen"><img src="${esc(t.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></button>`).join("")
+        : `<p class="neben">Nichts gefunden. Andere Suchwörter?</p>`;
+    };
+    $("[data-suche]", bl).onsubmit = (e) => { e.preventDefault(); $("#b-q", bl).blur(); suchen(); };
+    raster.onclick = (e) => {
+      const b = e.target.closest("[data-wahl]");
+      if (b) speichernBild(p, treffer[+b.dataset.wahl], bl);
+    };
+    $("[data-keins]", bl)?.addEventListener("click", () => speichernBild(p, false, bl));
+    $("[data-zu]", bl).onclick = blattZu;
+    suchen();
+  });
+}
+
+async function speichernBild(p, bild, bl) {
+  $$("button", bl).forEach((x) => x.disabled = true);
+  try {
+    await paketBildSpeichern(p, bild);
+    if (bild) p.foto = { thumb: bild.thumb, creator: bild.creator, license: bild.license, page: bild.page, query: bild.query };
+    else delete p.foto;
+    inhaltSetzen(db.inhalt);
+    blattZu();
+    melden(bild ? "Bild gespeichert" : "Bild entfernt");
+    zeichnen();
+  } catch (err) {
+    $$("button", bl).forEach((x) => x.disabled = false);
+    melden(`Speichern fehlgeschlagen: ${err.message}`);
+  }
+}
+
+/* ---------- Weitergeben, Teilen ---------- */
+
+async function dateiTeilen(name, text, typ) {
+  const datei = new File([text], name, { type: typ });
+  if (navigator.canShare?.({ files: [datei] })) {
+    try { await navigator.share({ files: [datei], title: name }); return; } catch (err) { if (err.name === "AbortError") return; }
+  }
+  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(datei), download: name });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function weitergeben(p) {
+  const oeffentlich = p.herkunft === "oeffentlich" || p.geteilt;
+  blatt(`<h2 class="ue">Weitergeben</h2>
+    <div class="zeilen">
+      <button class="zeile hoch" data-link style="background:var(--vertieft)" ${oeffentlich ? "" : "disabled"}><span class="zwei"><b>Link</b><small>${oeffentlich ? "Andere sehen das Paket in der App" : "Erst öffentlich teilen"}</small></span></button>
+      <button class="zeile hoch" data-anki style="background:var(--vertieft)"><span class="zwei"><b>Anki</b><small>Datei für die Lernkarten-App Anki</small></span></button>
+      <a class="zeile hoch" href="#/zettel/${encodeURIComponent(p.id)}" style="background:var(--vertieft)"><span class="zwei"><b>Lernzettel</b><small>Zum Drucken oder als PDF</small></span></a>
+    </div>`, (bl) => {
+    $("[data-link]", bl).onclick = async () => {
+      const url = paketLink(p);
+      if (navigator.share) {
+        try { await navigator.share({ title: p.name, text: `Lernkarten: ${p.name}`, url }); return; } catch (err) { if (err.name === "AbortError") return; }
+      }
+      try { await navigator.clipboard.writeText(url); melden("Link kopiert"); } catch { melden(url); }
+    };
+    $("[data-anki]", bl).onclick = () => {
+      const behalten = kartenVonPaket(p.id).filter((k) => stand(k.id)?.s === "aktiv");
+      if (!behalten.length) return melden("Noch keine behaltenen Karten in diesem Paket.");
+      const sauber = (t) => String(t || "").replace(/[\t\r\n]+/g, " ").trim();
+      const zeilen = ["#separator:tab", "#html:false", "#tags column:3",
+        ...behalten.map((k) => [sauber(k.frage), sauber(k.antwort + (k.tipp ? ` — Für die Debatte: ${k.tipp}` : "")), sauber(paketId(p.name))].join("\t"))];
+      dateiTeilen(`${paketId(p.name)}-anki.txt`, zeilen.join("\n") + "\n", "text/plain");
+    };
+  });
+}
+
+function teilenBlatt(p) {
+  if (p.herkunft === "oeffentlich") return melden("Dieses Paket liegt in der öffentlichen Ablage und ist für alle sichtbar.");
+  if (!verbunden()) return melden("Erst unter „Mehr → Verbindung“ verbinden.");
+  const behalten = kartenVonPaket(p.id).filter((k) => stand(k.id)?.s === "aktiv");
+  const hinweis = "Was einmal öffentlich war, lässt sich bei GitHub im Verlauf wiederfinden, auch wenn du das Teilen später beendest.";
+  blatt(`<h2 class="ue">${p.geteilt ? "Öffentlich geteilt" : "Öffentlich teilen?"}</h2>
+    <p class="neben" style="margin-bottom:16px">${p.geteilt
+      ? `Eine Kopie der Karten ist für alle sichtbar. Neue Karten kommen erst dazu, wenn du die geteilten Karten aktualisierst.`
+      : `${mehrzahl(behalten.length, "behaltene Karte wird", "behaltene Karten werden")} für alle sichtbar, mit Titel und Kernaussage der Dokumente. Die Dokumente selbst bleiben privat. ${hinweis}`}</p>
+    <div class="knoepfe">
+      <button class="knopf" data-ja ${behalten.length ? "" : "disabled"}>${p.geteilt ? "Geteilte Karten aktualisieren" : "Öffentlich teilen"}</button>
+      ${p.geteilt ? `<button class="knopf zweit" data-beenden>Nicht mehr teilen</button>` : ""}
+      <button class="knopf zweit" data-zu>Abbrechen</button>
+    </div>`, (bl) => {
+    $("[data-zu]", bl).onclick = blattZu;
+    $("[data-ja]", bl).onclick = async (e) => {
+      e.currentTarget.disabled = true;
+      try {
+        await paketTeilen(p, new Set(behalten.map((k) => k.id)), db.stand.aenderungen || {});
+        p.geteilt = true;
+        inhaltSetzen(db.inhalt);
+        blattZu();
+        melden("Geteilt – in ein paar Minuten öffentlich sichtbar");
+        zeichnen();
+      } catch (err) {
+        e.currentTarget.disabled = false;
+        melden(`Teilen fehlgeschlagen: ${err.message}`);
+      }
+    };
+    $("[data-beenden]", bl)?.addEventListener("click", async (e) => {
+      e.currentTarget.disabled = true;
+      try {
+        await paketNichtTeilen(p);
+        delete p.geteilt;
+        inhaltSetzen(db.inhalt);
+        blattZu();
+        melden("Wird nicht mehr geteilt");
+        zeichnen();
+      } catch (err) {
+        e.currentTarget.disabled = false;
+        melden(`Fehlgeschlagen: ${err.message}`);
+      }
+    });
+  });
+}
+
+/* ---------- Lernzettel ---------- */
+
+function zeigeZettel(v, id) {
+  const p = paket(id);
+  if (!p) return nichtGefunden(v, "Paket");
+  const karten = kartenVonPaket(p.id).filter((k) => stand(k.id)?.s !== "verworfen");
+  const themen = {};
+  for (const k of karten) (themen[k.thema || "Weitere"] ||= []).push(k);
+  const datum = new Date().toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
+  v.innerHTML = `
+    <header class="kopfzeile nicht-drucken"><a class="tipp" href="#/paket/${encodeURIComponent(p.id)}" aria-label="Zurück">${ic("zurueck")}</a><h1>Lernzettel</h1><span></span></header>
+    <div class="seite nicht-drucken"><button class="knopf" data-drucken>Drucken oder als PDF</button></div>
+    <article class="zettel seite">
+      <p class="neben">Lernzettel · ${esc(datum)}</p>
+      <h1 class="ue" style="margin-top:4px">${esc(p.name)}</h1>
+      ${(p.quellen || []).length ? `<p class="neben" style="margin-top:8px">Quellen: ${p.quellen.map((q) => esc([q.titel, q.herausgeber].filter(Boolean).join(", "))).join(" · ")}</p>` : ""}
+      ${Object.entries(themen).map(([t, liste]) => `
+        <section>
+          <h2 class="zw">${esc(t)}</h2>
+          ${liste.map((k) => `<div class="zettel-karte">
+            <p class="z-frage">${esc(k.frage)}</p>
+            <p class="z-antwort">${esc(k.antwort)}</p>
+            ${k.tipp ? `<p class="z-tipp">Für die Debatte: ${esc(k.tipp)}</p>` : ""}
+          </div>`).join("")}
+        </section>`).join("") || '<p class="neben" style="margin-top:24px">Noch keine Karten.</p>'}
+    </article>`;
+  $("[data-drucken]", v).onclick = () => window.print();
 }
 
 function karteZeigen(k) {

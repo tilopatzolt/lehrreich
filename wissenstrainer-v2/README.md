@@ -46,7 +46,12 @@ Plätze stehen in `app.js` in `KARTEN_PLAETZE` (Prozent der Karte, aus DESIGN.md
 - Mit Verbindung: deine echten Pakete aus der privaten und der öffentlichen Ablage, acht Bereiche.
 - Rückseite der Karte: Antwort, Quelle (höchstens 2 Zeilen) und – wo vorhanden – „Für die Debatte“
   (Vorschlag, wird nach dem Testen entschieden). Die Detailansicht zeigt zusätzlich die Einordnung.
-- Noch nicht: Weitergeben, Teilen, Lernzettel, Bildauswahl, Fotos, Quiz.
+- Paket-Seite: **Bild ändern** (freie Fotos aus Openverse und Wikimedia Commons, auch „Kein Bild“),
+  **Weitergeben** (Link – nur für öffentliche oder geteilte Pakete, er öffnet das Paket in der ersten
+  Version, die öffentliche Pakete auch ohne Schlüssel zeigt –, Anki-Datei, Lernzettel), **Teilen**
+  (behaltene Karten als Kopie in die öffentliche Ablage, aktualisieren, nicht mehr teilen) und
+  **Lernzettel** zum Drucken oder als PDF.
+- Noch nicht: eigene Fotos, Quiz, Spiele.
 
 ## Regeln (kurz)
 

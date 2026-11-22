@@ -370,6 +370,27 @@ svg.ic { width: 24px; height: 24px; flex: none; }
 .meldung button { color: inherit; text-decoration: underline; font-weight: 700; }
 .ohne-nav .meldung { bottom: calc(24px + env(safe-area-inset-bottom)); }
 
+/* ---------- Bild wählen ---------- */
+.bildraster { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 50dvh; overflow-y: auto; margin-bottom: 8px; }
+.bildraster > p { grid-column: 1 / -1; }
+.bildraster button { aspect-ratio: 4 / 3; border-radius: var(--ecke); overflow: hidden; background: var(--vertieft); padding: 0; }
+.bildraster button:disabled { opacity: 0.5; }
+.bildraster img { display: block; width: 100%; height: 100%; object-fit: cover; filter: var(--foto-filter); }
+.zeile:disabled { opacity: 0.5; cursor: default; }
+
+/* ---------- Lernzettel ---------- */
+.zettel { margin-top: 24px; }
+.zettel section { margin-top: 24px; }
+.zettel-karte { margin-top: 12px; break-inside: avoid; }
+.z-frage { font-weight: 600; }
+.z-antwort { margin-top: 2px; }
+.z-tipp { margin-top: 4px; font-size: 15px; color: var(--text-neben); }
+@media print {
+  .nav, .nicht-drucken, .meldung { display: none !important; }
+  #view { padding: 0 !important; }
+  body { font-size: 12pt; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
