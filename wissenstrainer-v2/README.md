@@ -8,16 +8,34 @@ Die erste Version in `wissenstrainer/` bleibt unverändert und nutzbar.
 - **Getrennt von der ersten Version:** eigener Lernstand (Speicherschlüssel `wt2.…`) und eigene
   Offline-Ablage. Was du in der einen Version lernst, sieht die andere nicht.
 
-## Stand: Schritt 1 (noch ohne Bilder)
+## Mit deinen echten Daten verbinden
+
+**Mehr → Verbindung**: Auf einem Gerät, auf dem die erste Version schon verbunden ist, reicht
+„Verbindung aus der ersten Version übernehmen“. Sonst den GitHub-Schlüssel (`github_pat_…`)
+einfügen. Danach fragt die App, ob sie deinen Lernstand aus der ersten Version übernehmen soll
+(gelernte, gesichtete und verworfene Karten, Änderungen, pausierte Pakete). Die erste Version
+bleibt dabei unverändert.
+
+- **Bereiche:** Welche Pakete zu welchem Bereich gehören, steht in `bereiche.json` im privaten
+  Repository. Die App legt die Datei beim ersten Verbinden an und pflegt sie. Die Ordner und die
+  Auswertung bleiben wie bisher. Pakete ohne Zuordnung landen im Sammelbereich „Bauplatz und
+  Segelboot“.
+- **Hinzufügen:** Text oder Datei, Titel, Bereich. „Neues Paket“ legt einen neuen Ordner in
+  `privat/` an; „Zum Basispaket“ legt das Dokument in `privat/Grundlagen <Bereich>/`. Nach ein bis
+  drei Minuten **Mehr → Neue Karten abrufen**.
+- **Neue Bereiche:** Mehr → Bereiche verwalten. Sie erscheinen auf der Karte vor dem
+  Sammelbereich.
+
+## Stand: Schritt 2 (noch ohne Bilder)
 
 - Bildschirme: Welt, Bereiche, Bereich, Paket, Lernen, Runde geschafft, Mein Fortschritt, Üben,
   Mehr, Sichten, Hinzufügen; Tag und Nacht.
 - Aufbau Bereich → Paket → Karten. Pakete bleiben, wie sie sind; nur das Basispaket eines Bereichs
   wächst.
-- Beispieldaten mit drei Bereichen (Schule, Senatsverwaltung, Recht). Zurücksetzen unter
-  **Mehr → Lernstand sichern**.
-- Noch nicht verbunden: Hinzufügen erzeugt noch keine Karten, Weitergeben, Teilen, Lernzettel und
-  Bildauswahl kommen später. Die echten Pakete aus der ersten Version sind noch nicht übernommen.
+- Ohne Verbindung: Beispieldaten mit drei Bereichen (Schule, Senatsverwaltung, Recht).
+  Zurücksetzen unter **Mehr → Lernstand sichern**.
+- Mit Verbindung: deine echten Pakete aus der privaten und der öffentlichen Ablage, acht Bereiche.
+- Noch nicht: Weitergeben, Teilen, Lernzettel, Bildauswahl, Fotos, Quiz.
 
 ## Regeln (kurz)
 
@@ -40,4 +58,4 @@ Fehlt ein Bild, zeigt die App der Reihe nach: das Tag-Bild abgedunkelt, das Bild
 `design/` enthält die Vorgaben. Vorrang: `DESIGN.md` vor `08 Stil-Vorgabe.md` vor
 `05 Skizzen Aufbau.html`; `01 Briefing aufgeteilt.md` ist der ältere Stand.
 
-Prüfen der Lern-Logik: `node wissenstrainer-v2/test/kern.test.mjs`
+Prüfen der Logik: `node wissenstrainer-v2/test/kern.test.mjs` und `node wissenstrainer-v2/test/github.test.mjs`

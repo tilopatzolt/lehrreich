@@ -6,10 +6,14 @@ import {
 import {
   db, laden, speichern, beispielLaden, allesZuruecksetzen, bereich, paket, karte, stand,
   paketeVon, kartenVonPaket, kartenVonBereich, planKarten, zahlenPaket, zahlenBereich, stufeBereich,
-  fertigePakete, heuteLog, figurAktualisieren, neuerBereich,
+  fertigePakete, heuteLog, figurAktualisieren, neuerBereich, inhaltSetzen, karteAendern, pausieren, standNeu, imPlan,
 } from "./daten.js";
+import {
+  verbunden, verbindung, verbindungSpeichern, trennen, pruefen, inhaltLaden, hochladen, ersteVersion,
+  lernstandUebernehmen, bereicheStand, bereicheSpeichern, bereichAnlegen, paketId, SAMMELBEREICH,
+} from "./github.js";
 
-const APP_STAND = "22.11.2026";
+const APP_STAND = "22.11.2026b";
 
 /* ============================================================
    Hilfen
@@ -192,11 +196,11 @@ const routen = {
   welt: zeigeWelt, bereiche: zeigeBereiche, bereich: zeigeBereich, paket: zeigePaket,
   lernen: zeigeLernen, geschafft: zeigeGeschafft, fortschritt: zeigeFortschritt, ueben: zeigeUeben,
   mehr: zeigeMehr, sichten: zeigeSichten, verwalten: zeigeVerwalten, suche: zeigeSuche,
-  einstellungen: zeigeEinstellungen, sichern: zeigeSichern,
+  einstellungen: zeigeEinstellungen, sichern: zeigeSichern, verbindung: zeigeVerbindung,
 };
 const REITER_VON = {
   welt: "welt", bereich: "welt", paket: "welt", bereiche: "bereiche", ueben: "ueben", fortschritt: "ueben",
-  mehr: "mehr", sichten: "mehr", verwalten: "mehr", suche: "mehr", einstellungen: "mehr", sichern: "mehr",
+  mehr: "mehr", sichten: "mehr", verwalten: "mehr", suche: "mehr", einstellungen: "mehr", sichern: "mehr", verbindung: "mehr",
 };
 
 function route() {
@@ -374,7 +378,7 @@ function zeigePaket(v, id) {
       ${f ? `<a class="knopf" href="#/lernen/paket/${encodeURIComponent(p.id)}">Jetzt lernen (${f})</a>`
         : `<a class="knopf zweit" href="#/lernen/paketfrei/${encodeURIComponent(p.id)}" ${z.aktiv ? "" : "data-leer"}>Paket üben</a>`}
       <div class="zeile" style="margin-top:12px"><span>Im täglichen Lernplan</span>
-        <label class="schalter"><input type="checkbox" id="im-plan" ${p.pausiert ? "" : "checked"} aria-label="Im täglichen Lernplan"><i></i></label></div>
+        <label class="schalter"><input type="checkbox" id="im-plan" ${imPlan(p.id) ? "checked" : ""} aria-label="Im täglichen Lernplan"><i></i></label></div>
       <div class="knopf-reihe" style="margin-top:12px">
         <button class="knopf zweit" data-spaeter="Weitergeben">Weitergeben</button>
         <button class="knopf zweit" data-spaeter="Öffentlich teilen">Teilen</button>
@@ -386,7 +390,7 @@ function zeigePaket(v, id) {
       <div class="zeilen">${karten.length ? karten.map((k) => `<button class="zeile" data-karte="${esc(k.id)}"><span class="zeile-text">${esc(k.frage)}</span><span class="rechts">${esc(STATUS_WORT(stand(k.id)))}</span></button>`).join("")
         : `<p class="neben">Noch keine Karten.${p.basis ? " Dieses Basispaket wächst mit jedem Dokument, das du hinzufügst." : ""}</p>`}</div>
     </div>`;
-  $("#im-plan", v).onchange = (e) => { p.pausiert = !e.target.checked; speichern(); };
+  $("#im-plan", v).onchange = (e) => pausieren(p.id, !e.target.checked);
   $("[data-bild]", v).onclick = () => spaeter("Die Bildauswahl");
   $$("[data-spaeter]", v).forEach((x) => x.onclick = () => spaeter(x.dataset.spaeter));
   $$("[data-karte]", v).forEach((x) => x.onclick = () => karteZeigen(karte(x.dataset.karte)));
@@ -418,8 +422,7 @@ function bearbeiten(k, danach) {
       const fr = $("#b-frage", bl).value.trim();
       const an = $("#b-antwort", bl).value.trim();
       if (!fr || !an) return melden("Frage und Antwort brauchen Text.");
-      Object.assign(k, { frage: fr, antwort: an });
-      speichern();
+      karteAendern(k, fr, an);
       blattZu();
       melden("Gespeichert");
       danach ? danach() : zeichnen();
@@ -686,13 +689,16 @@ function zeigeMehr(v) {
     <div class="seite zeilen">
       <a class="zeile" href="#/sichten"><span>Sichten</span><span class="rechts">${e ? `${e} neu` : ""}</span></a>
       <button class="zeile" data-hinzu><span>Neues Paket hinzufügen</span></button>
+      ${verbunden() ? `<button class="zeile" data-abrufen><span>Neue Karten abrufen</span></button>` : ""}
       <div class="zeile aus"><span>Fotos</span><span class="rechts">später</span></div>
       <a class="zeile" href="#/verwalten"><span>Bereiche verwalten</span></a>
       <a class="zeile" href="#/suche"><span>Alle Karten durchsuchen</span></a>
+      <a class="zeile" href="#/verbindung"><span>Verbindung</span><span class="rechts">${verbunden() ? "verbunden" : "Beispieldaten"}</span></a>
       <a class="zeile" href="#/einstellungen"><span>Einstellungen</span></a>
       <a class="zeile" href="#/sichern"><span>Lernstand sichern</span></a>
     </div>`;
   $("[data-hinzu]", v).onclick = () => hinzufuegen();
+  $("[data-abrufen]", v)?.addEventListener("click", () => abrufen(true));
 }
 
 const kopf = (titel, zurueck = "#/mehr") => `<header class="kopfzeile"><a class="tipp" href="${zurueck}" aria-label="Zurück">${ic("zurueck")}</a><h1>${esc(titel)}</h1><span></span></header>`;
@@ -748,6 +754,12 @@ function sichten(karten, s) {
 /* ---------- 6 · Hinzufügen ---------- */
 
 function hinzufuegen(bereichId) {
+  if (!verbunden()) {
+    melden("Erst unter „Mehr → Verbindung“ mit GitHub verbinden.");
+    return;
+  }
+  // Vorschlag: der offene Sammelbereich, sofern kein Bereich vorgegeben ist
+  bereichId ||= db.inhalt.bereiche.some((b) => b.id === SAMMELBEREICH) ? SAMMELBEREICH : db.inhalt.bereiche[0]?.id;
   let art = "text";
   let ziel = "neu";
   const bereiche = db.inhalt.bereiche;
@@ -777,12 +789,29 @@ function hinzufuegen(bereichId) {
         $$("[data-fuer]", bl).forEach((f) => f.hidden = f.dataset.fuer !== art);
       } else ziel = b.dataset.wert;
     });
-    $("[data-los]", bl).onclick = () => {
-      if (art === "text" && !$("#h-text", bl).value.trim()) return melden("Bitte zuerst Text einfügen.");
-      if (art === "datei" && !$("#h-datei", bl).files.length) return melden("Bitte eine Datei wählen.");
-      if (!$("#h-titel", bl).value.trim()) return melden("Bitte einen Titel eingeben.");
-      blattZu();
-      melden(ziel === "basis" ? "Hinzufügen zum Basispaket kommt im nächsten Schritt." : "Karten erzeugen kommt im nächsten Schritt.");
+    $("[data-los]", bl).onclick = async (e) => {
+      const text = $("#h-text", bl).value;
+      const datei = $("#h-datei", bl).files[0];
+      const titel = $("#h-titel", bl).value.trim();
+      if (art === "text" && !text.trim()) return melden("Bitte zuerst Text einfügen.");
+      if (art === "datei" && !datei) return melden("Bitte eine Datei wählen.");
+      if (!titel) return melden("Bitte einen Titel eingeben.");
+      const knopf = e.currentTarget;
+      knopf.disabled = true;
+      knopf.textContent = "Wird hochgeladen …";
+      try {
+        const r = await hochladen({
+          bereich: $("#h-bereich", bl).value, ziel, titel,
+          text: art === "text" ? text : "", datei: art === "datei" ? datei : null,
+          vorhandeneIds: new Set(db.inhalt.pakete.map((x) => x.id)),
+        });
+        blattZu();
+        melden(`„${r.ordner}“ ist hochgeladen. In ein bis drei Minuten gibt es Karten.`);
+      } catch (err) {
+        knopf.disabled = false;
+        knopf.textContent = "Karten erzeugen";
+        melden(`Hochladen fehlgeschlagen: ${err.message}`);
+      }
     };
   });
 }
@@ -808,16 +837,42 @@ function zeigeVerwalten(v) {
     <p class="neben" style="margin-bottom:16px">Der Bereich bekommt ein leeres Basispaket.</p>
     <div class="knoepfe"><button class="knopf" data-anlegen>Anlegen</button><button class="knopf zweit" data-zu>Abbrechen</button></div>`, (bl) => {
     $("[data-zu]", bl).onclick = blattZu;
-    $("[data-anlegen]", bl).onclick = () => {
+    $("[data-anlegen]", bl).onclick = async (e) => {
       const name = $("#n-name", bl).value.trim();
+      const kennung = $("#n-bild", bl).value;
       if (!name) return melden("Bitte einen Namen eingeben.");
       if (db.inhalt.bereiche.some((b) => b.name.toLowerCase() === name.toLowerCase())) return melden("Diesen Bereich gibt es schon.");
-      neuerBereich(name, $("#n-bild", bl).value);
+      if (!verbunden()) {
+        neuerBereich(name, kennung);
+      } else {
+        e.currentTarget.disabled = true;
+        try {
+          await bereichSpeichern(name, kennung);
+        } catch (err) {
+          e.currentTarget.disabled = false;
+          return melden(`Speichern fehlgeschlagen: ${err.message}`);
+        }
+      }
       blattZu();
       melden("Bereich angelegt");
       zeichnen();
     };
   });
+}
+
+// Neuer Bereich in bereiche.json – vor dem Sammelbereich, der unten auf der Karte bleibt
+async function bereichSpeichern(name, kennung) {
+  const bd = bereicheStand();
+  let id = paketId(name);
+  while (bd.bereiche.some((b) => b.id === id)) id += "-2";
+  const b = bereichAnlegen(id, name, kennung);
+  const unten = bd.bereiche.findIndex((x) => x.id === SAMMELBEREICH);
+  bd.bereiche.splice(unten < 0 ? bd.bereiche.length : unten, 0, b);
+  await bereicheSpeichern(`Wissenstrainer v2: Bereich „${name}“ angelegt`);
+  const i = db.inhalt.bereiche.findIndex((x) => x.id === SAMMELBEREICH);
+  db.inhalt.bereiche.splice(i < 0 ? db.inhalt.bereiche.length : i, 0, { id, name, kennung, basis: b.basis });
+  db.inhalt.pakete.push({ id: b.basis, bereich: id, name: b.basisOrdner, basis: true, quellen: [] });
+  inhaltSetzen(db.inhalt);
 }
 
 /* ---------- Suche ---------- */
@@ -888,9 +943,9 @@ function zeigeSichern(v) {
         <button class="knopf zweit" data-rein>Lernstand einspielen</button>
         <input type="file" id="sicherung" accept="application/json,.json" hidden>
       </div>
-      <h2 class="zw abschnitt">Beispieldaten</h2>
+      ${verbunden() ? "" : `<h2 class="zw abschnitt">Beispieldaten</h2>
       <p class="neben" style="margin-bottom:16px">Setzt alles auf den Anfang zurück: drei Bereiche mit Beispielkarten.</p>
-      <button class="knopf zweit" data-reset>Beispieldaten zurücksetzen</button>
+      <button class="knopf zweit" data-reset>Beispieldaten zurücksetzen</button>`}
     </div>`;
   $("[data-raus]", v).onclick = () => {
     const blob = new Blob([JSON.stringify({ app: "wissenstrainer-v2", gesichert: new Date().toISOString(), inhalt: db.inhalt, stand: db.stand, einst: db.einst }, null, 1)], { type: "application/json" });
@@ -912,14 +967,114 @@ function zeigeSichern(v) {
       melden("Diese Datei ist keine Sicherung des Wissenstrainers.");
     }
   };
-  $("[data-reset]", v).onclick = () => frage("Beispieldaten zurücksetzen?", "Dein Lernstand in dieser Version geht dabei verloren.", "Zurücksetzen", async () => {
+  $("[data-reset]", v)?.addEventListener("click", () => frage("Beispieldaten zurücksetzen?", "Dein Lernstand in dieser Version geht dabei verloren.", "Zurücksetzen", async () => {
     allesZuruecksetzen();
     runde = null;
     await beispielLaden();
     melden("Zurückgesetzt");
     location.hash = "#/welt";
     zeichnen();
-  });
+  }));
+}
+
+/* ---------- Verbindung ---------- */
+
+function zeigeVerbindung(v) {
+  if (verbunden()) {
+    v.innerHTML = `
+      ${kopf("Verbindung")}
+      <div class="seite">
+        <p class="neben" style="margin-bottom:16px">Verbunden mit deinen beiden Ablagen bei GitHub. Neue Karten kommen beim Öffnen der App und über „Neue Karten abrufen“.</p>
+        <div class="zeilen">
+          <div class="zeile"><span>Privat</span><span class="rechts zeile-text" style="text-align:right">${esc(verbindung.privatRepo)}</span></div>
+          <div class="zeile"><span>Öffentlich</span><span class="rechts zeile-text" style="text-align:right">${esc(verbindung.oeffentlichRepo)}</span></div>
+        </div>
+        <div class="zeilen" style="gap:12px;margin-top:20px">
+          <button class="knopf zweit" data-abrufen>Neue Karten abrufen</button>
+          <button class="knopf zweit" data-trennen>Verbindung trennen</button>
+        </div>
+      </div>`;
+    $("[data-abrufen]", v).onclick = () => abrufen(true);
+    $("[data-trennen]", v).onclick = () => frage("Verbindung trennen?", "Der Schlüssel wird auf diesem Gerät gelöscht. Dein Lernstand und die zuletzt geladenen Karten bleiben.", "Trennen", () => {
+      trennen();
+      melden("Verbindung getrennt");
+      zeichnen();
+    });
+    return;
+  }
+  const alt = ersteVersion();
+  v.innerHTML = `
+    ${kopf("Verbindung")}
+    <div class="seite">
+      <p class="neben" style="margin-bottom:16px">Gerade siehst du Beispieldaten. Mit deinem GitHub-Schlüssel siehst du deine echten Pakete und kannst neue hinzufügen.</p>
+      ${alt.token ? `<button class="knopf" data-uebernehmen>Verbindung aus der ersten Version übernehmen</button>
+        <p class="neben" style="margin:8px 0 24px">Dein Schlüssel ist auf diesem Gerät schon gespeichert.</p>
+        <h2 class="zw" style="margin-bottom:12px">Oder Schlüssel eingeben</h2>` : ""}
+      <div class="feld"><label for="v-token">GitHub-Schlüssel (beginnt mit github_pat_)</label><input id="v-token" type="password" autocomplete="off" spellcheck="false"></div>
+      <button class="knopf ${alt.token ? "zweit" : ""}" data-verbinden>Verbinden</button>
+    </div>`;
+  $("[data-uebernehmen]", v)?.addEventListener("click", (e) => verbinden(alt.token, e.currentTarget));
+  $("[data-verbinden]", v).onclick = (e) => {
+    const token = $("#v-token", v).value.trim();
+    if (!token) return melden("Bitte den Schlüssel einfügen.");
+    verbinden({ token }, e.currentTarget);
+  };
+}
+
+async function verbinden(daten, knopf) {
+  knopf.disabled = true;
+  verbindungSpeichern(daten);
+  try {
+    await pruefen();
+  } catch (err) {
+    trennen();
+    knopf.disabled = false;
+    return melden(`Keine Verbindung: ${err.message}`);
+  }
+  const alt = ersteVersion();
+  if (alt.stand && (alt.gelernt || alt.gesichtet)) {
+    blatt(`<h2 class="ue">Lernstand übernehmen?</h2>
+      <p class="neben" style="margin-bottom:16px">Auf diesem Gerät gibt es aus der ersten Version ${mehrzahl(alt.gelernt, "gelernte Karte", "gelernte Karten")} und ${mehrzahl(alt.gesichtet, "gesichtete Karte", "gesichtete Karten")}. Die erste Version bleibt dabei unverändert.</p>
+      <div class="knoepfe"><button class="knopf" data-ja>Lernstand übernehmen</button><button class="knopf zweit" data-nein>Neu beginnen</button></div>`, (bl) => {
+      $("[data-ja]", bl).onclick = () => { blattZu(); einrichten(lernstandUebernehmen(alt.stand)); };
+      $("[data-nein]", bl).onclick = () => { blattZu(); einrichten(null); };
+    });
+  } else {
+    einrichten(null);
+  }
+}
+
+// Von Beispieldaten auf echte Daten wechseln
+async function einrichten(uebernommen) {
+  melden("Lade deine Pakete …");
+  try {
+    const inhalt = await inhaltLaden();
+    standNeu(uebernommen);
+    runde = null;
+    inhaltSetzen(inhalt);
+    melden(`Verbunden: ${mehrzahl(inhalt.pakete.filter((p) => !p.basis || kartenVonPaket(p.id).length).length, "Paket", "Pakete")} geladen`);
+    location.hash = "#/welt";
+    zeichnen();
+  } catch (err) {
+    melden(`Laden fehlgeschlagen: ${err.message}`);
+    zeichnen();
+  }
+}
+
+// Karten neu von GitHub holen (beim Start leise, über „Neue Karten abrufen“ mit Meldung)
+async function abrufen(laut) {
+  if (!verbunden()) return;
+  if (laut) melden("Frage GitHub …");
+  try {
+    const vorher = new Set(db.inhalt.karten.map((k) => k.id));
+    const inhalt = await inhaltLaden();
+    inhaltSetzen(inhalt);
+    const neu = inhalt.karten.filter((k) => !vorher.has(k.id)).length;
+    if (route().name !== "lernen") zeichnen();
+    if (laut) melden(neu ? `${mehrzahl(neu, "neue Karte", "neue Karten")} zum Sichten` : "Alles aktuell");
+  } catch (err) {
+    if (laut) melden(`GitHub nicht erreichbar: ${err.message}`);
+  }
 }
 
 function nichtGefunden(v, was) {
@@ -933,6 +1088,7 @@ function nichtGefunden(v, was) {
 await laden();
 modusAnwenden();
 zeichnen();
+if (verbunden() && !db.inhalt.beispiel) abrufen(false);
 
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   navigator.serviceWorker.register("sw.js").catch(() => {});

@@ -53,8 +53,12 @@ Anleitung: `wissenstrainer-v2/README.md`.
   `01` Teil B und `DESIGN.md` Abschnitt 12 beachten; nichts hinzufügen, was dort nicht steht.
 - Farben nur als Variablen im Block oben in `styles.css`; Schatten nur über `--schein-`Variablen;
   Schrift nur Jost (liegt in `fonts/`), Icons Phosphor als Inline-SVG.
-- Eigene Speicherschlüssel `wt2.…` und eigener Service Worker (Cache `wt2-…`): nie Daten der
-  ersten Version lesen oder ändern.
+- Eigene Speicherschlüssel `wt2.…` und eigener Service Worker (Cache `wt2-…`). Daten der ersten
+  Version nie ändern; gelesen werden `wt.v1`/`wt.github` nur beim Verbinden, um Schlüssel und
+  Lernstand auf Wunsch zu übernehmen (`github.js`).
+- Bereiche: `bereiche.json` im privaten Repo (Bereiche mit Basispaket, Zuordnung Paket → Bereich);
+  Pakete und Ordner bleiben im Format der ersten Version, die Auswertung ist unverändert.
+  Sammelbereich `bauplatz` („Bauplatz und Segelboot“) steht immer zuletzt.
 - Bilder: nur über `bildpfad()` in `app.js`; Dateien in `img/` nach `design/13 Bildliste.md`.
 - Bei Änderungen `APP_STAND` in `app.js` und `VERSION` in `sw.js` erhöhen.
-- Logik-Tests: `node wissenstrainer-v2/test/kern.test.mjs`.
+- Logik-Tests: `node wissenstrainer-v2/test/kern.test.mjs` und `test/github.test.mjs`.
