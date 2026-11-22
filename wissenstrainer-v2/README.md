@@ -18,15 +18,22 @@ bleibt dabei unverändert.
 
 - **Bereiche:** Welche Pakete zu welchem Bereich gehören, steht in `bereiche.json` im privaten
   Repository. Die App legt die Datei beim ersten Verbinden an und pflegt sie. Die Ordner und die
-  Auswertung bleiben wie bisher. Pakete ohne Zuordnung landen im Sammelbereich „Bauplatz und
-  Segelboot“.
+  Auswertung bleiben wie bisher. Pakete ohne Zuordnung landen im Sammelbereich „Bildungsreise“.
 - **Hinzufügen:** Text oder Datei, Titel, Bereich. „Neues Paket“ legt einen neuen Ordner in
   `privat/` an; „Zum Basispaket“ legt das Dokument in `privat/Grundlagen <Bereich>/`. Nach ein bis
   drei Minuten **Mehr → Neue Karten abrufen**.
-- **Neue Bereiche:** Mehr → Bereiche verwalten. Sie erscheinen auf der Karte vor dem
-  Sammelbereich.
+- **Neue Bereiche:** Mehr → Bereiche verwalten. Sie haben keinen eigenen Bauplatz und fahren mit
+  der Bildungsreise.
 
-## Stand: Schritt 2 (noch ohne Bilder)
+## Landkarte
+
+Filz-Spielteppich als Hintergrund (`img/welt-tag.webp`, `img/welt-nacht.webp`). Die sieben
+Bereiche mit eigenem Bauplatz stehen fest an ihrem Platz (Schule, Lehrkräfte, Universitäten &
+Wissenschaft, Senatsverwaltung, Recht, Schüler:innen, Berufsbildung und lebenslanges Lernen). Alle
+anderen Bereiche, auch die Bildungsreise selbst, erreichst du über das Boot am Steg unten. Die
+Plätze stehen in `app.js` in `KARTEN_PLAETZE` (Prozent der Karte, aus DESIGN.md 7.1).
+
+## Stand: Schritt 3 (mit Bildern)
 
 - Bildschirme: Welt, Bereiche, Bereich, Paket, Lernen, Runde geschafft, Mein Fortschritt, Üben,
   Mehr, Sichten, Hinzufügen; Tag und Nacht.

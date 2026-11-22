@@ -10,8 +10,8 @@ assert.equal(bereichAnlegen("schueler", "Schüler:innen", "schueler").basisOrdne
 
 // Umwandeln: Zuordnung, Sammelbereich, Basispakete, geteilte Kopien nicht doppelt
 const bd = {
-  bereiche: [bereichAnlegen("senatsverwaltung", "Senatsverwaltung", "senatsverwaltung"), bereichAnlegen("bauplatz", "Bauplatz und Segelboot", "bauplatz")],
-  zuordnung: { "qualitaetsstrategie-senat": "senatsverwaltung" },
+  bereiche: [bereichAnlegen("senatsverwaltung", "Senatsverwaltung", "senatsverwaltung"), bereichAnlegen("bildungsreise", "Bildungsreise", "allgemein")],
+  zuordnung: { "qualitaetsstrategie-senat": "senatsverwaltung", klimageld: "gibt-es-nicht-mehr" },
 };
 const privat = [
   { id: "qualitaetsstrategie-senat", name: "Qualitätsstrategie Senat", sources: [{ id: "s1", title: "Strategie", organisation: "SenBJF", status: "ok", image: { thumb: "t.jpg", creator: "X", license: "CC BY" } }],
@@ -27,6 +27,7 @@ const p = (id) => i.pakete.find((x) => x.id === id);
 assert.equal(p("qualitaetsstrategie-senat").bereich, "senatsverwaltung");
 assert.equal(p("flexmaster").bereich, SAMMELBEREICH, "ohne Zuordnung in den Sammelbereich");
 assert.equal(p("klimageld").herkunft, "oeffentlich");
+assert.equal(p("klimageld").bereich, SAMMELBEREICH, "Zuordnung auf fehlenden Bereich → Sammelbereich");
 assert.equal(i.karten.filter((k) => k.id === "c1").length, 1, "geteilte Kopie nicht doppelt");
 assert.equal(p("qualitaetsstrategie-senat").foto.thumb, "t.jpg");
 assert.ok(p("grundlagen-senatsverwaltung").basis, "leeres Basispaket je Bereich");

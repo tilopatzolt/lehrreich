@@ -13,7 +13,7 @@ import {
   lernstandUebernehmen, bereicheStand, bereicheSpeichern, bereichAnlegen, paketId, SAMMELBEREICH,
 } from "./github.js";
 
-const APP_STAND = "22.11.2026b";
+const APP_STAND = "22.11.2026c";
 
 /* ============================================================
    Hilfen
@@ -74,6 +74,11 @@ export function bildpfad(art, o, m) {
     else k.push({ src: `figur-s${n}-tag.webp`, filter: "none" });
     return { k, platz: { typ: "text", text: "Figur", zusatz: o.klein ? "" : `Stufe ${n}${o.zustand === "jubel" ? " jubelt" : ""}`, rund: o.klein } };
   }
+  if (art === "welt") {
+    // Hintergrund der Landkarte: eigenes Bild für Tag und Nacht, ohne Filter
+    k.push({ src: `welt-${nacht ? "nacht" : "tag"}.webp`, filter: "none" });
+    return { k, platz: { typ: "welt" } };
+  }
   if (art === "laterne") {
     if (o.an && nacht) k.push({ src: "laterne-an-nacht.webp", filter: SCHEIN }, { src: "laterne-an-tag.webp", filter: NACHT });
     else k.push({ src: `laterne-${o.an ? "an" : "aus"}-tag.webp`, filter: nacht ? NACHT : "none" });
@@ -92,6 +97,7 @@ export function bildpfad(art, o, m) {
 const fehlend = new Set(); // Dateien, die es (noch) nicht gibt – nicht immer wieder anfragen
 
 function platzHTML(p) {
+  if (p.typ === "welt") return `<span class="platz-welt"></span>`;
   if (p.typ === "laterne") return `<span class="platz-laterne ${p.an ? "an" : ""}"><i></i></span>`;
   if (p.typ === "buch") return `<span class="platz-buch f${p.nummer}"></span>`;
   if (p.typ === "gabe") return `<span class="platz"></span>`;
@@ -105,7 +111,7 @@ function bildHTML(art, o = {}, stil = "") {
   const inhalt = offen.length
     ? `<img src="img/${offen[0].src}" alt="" decoding="async" style="filter:${offen[0].filter}" data-rest="${esc(JSON.stringify(offen.slice(1)))}" onerror="wtBildFehlt(this)">`
     : platzHTML(platz);
-  return `<span class="bild ${art}" style="${skala}${stil}" data-platz="${esc(JSON.stringify(platz))}">${inhalt}</span>`;
+  return `<span class="bild bild-${art}" style="${skala}${stil}" data-platz="${esc(JSON.stringify(platz))}">${inhalt}</span>`;
 }
 
 // Ersatz-Reihenfolge: nächste Datei versuchen, zuletzt Platzhalter
@@ -228,12 +234,20 @@ window.addEventListener("hashchange", () => {
    1 · Welt
    ============================================================ */
 
-const ORTE = [[14, 96], [140, 110], [266, 92], [14, 248], [140, 266], [266, 250], [60, 408]];
-function ortPosition(i) {
-  if (i < ORTE.length) return ORTE[i];
-  const j = i - ORTE.length; // danach drei Spalten, Zeilenabstand 156
-  return [[14, 140, 266][j % 3], 96 + (3 + Math.floor(j / 3)) * 156];
-}
+// Alle Plätze der Landkarte an einer Stelle (DESIGN.md 7.1, gemessen am Bild welt-tag/-nacht).
+// x in % der Kartenbreite, y in % der Kartenhöhe. Bauplätze sind fest einem Bereich zugeordnet;
+// Bereiche ohne Bauplatz sammelt die Bildungsreise am Steg.
+const KARTEN_PLAETZE = {
+  bauplaetze: {
+    schule: [18.2, 31.3], lehrkraefte: [50.5, 31.4], universitaeten: [82.9, 31.3],
+    senatsverwaltung: [21.2, 56.7], recht: [50.3, 56.7], schueler: [79.3, 56.7], lebenslang: [22.0, 74.0],
+  },
+  laternen: { y: 12.8, x: [12.3, 24.9, 37.4, 50.0, 62.6, 75.2, 87.7] },
+  boot: { links: 38.1, oben: 80.1, breite: 44.1, hoehe: 16.3 },
+};
+
+const hatBauplatz = (b) => !!KARTEN_PLAETZE.bauplaetze[b.id];
+const amSteg = () => db.inhalt.bereiche.filter((b) => !hatBauplatz(b));
 
 function zeigeWelt(v) {
   const p = plan();
@@ -247,8 +261,10 @@ function zeigeWelt(v) {
     proBereich[b] = (proBereich[b] || 0) + 1;
   }
   const lernTage = new Set(Object.keys(db.stand.log).filter((t) => db.stand.log[t].gelernt > 0));
-  const bereiche = db.inhalt.bereiche;
-  const hoehe = Math.max(568, ...bereiche.map((_, i) => ortPosition(i)[1] + 160));
+  const steg = amSteg();
+  const stegFaellig = steg.reduce((s, b) => s + (proBereich[b.id] || 0), 0);
+  const { boot, laternen } = KARTEN_PLAETZE;
+  const faehnchen = (f) => f ? `<span class="faehnchen"><span class="mast"></span><span class="fahne">${f}</span></span>` : "";
 
   v.innerHTML = `
     <section class="welt">
@@ -264,24 +280,36 @@ function zeigeWelt(v) {
         ${entwuerfe ? `<a class="textlink" href="#/sichten">${mehrzahl(entwuerfe, "neue Karte", "neue Karten")} zum Sichten</a>` : ""}
       </div>
       <div class="karte-land">
-        <div class="land" style="height:calc(var(--u) * ${hoehe})">
-          <svg class="weg" viewBox="0 0 390 568" aria-hidden="true"><path d="M0 80H390M70 80C70 170 200 190 195 290S110 400 115 480"/></svg>
-          <div class="laternen" aria-label="Lernserie dieser Woche">
-            ${woche(heute()).map((t) => bildHTML("laterne", { an: lernTage.has(t) })).join("")}
-          </div>
-          ${bereiche.map((b, i) => {
-            const [x, y] = ortPosition(i);
+        <div class="land">
+          ${bildHTML("welt", {}, "position:absolute;inset:0;width:100%;height:100%")}
+          ${woche(heute()).map((t, i) => `<span class="laterne" style="left:${laternen.x[i]}%;top:${laternen.y}%" aria-hidden="true">${bildHTML("laterne", { an: lernTage.has(t) }, "width:100%;height:100%")}</span>`).join("")}
+          ${db.inhalt.bereiche.filter(hatBauplatz).map((b) => {
+            const [x, y] = KARTEN_PLAETZE.bauplaetze[b.id];
             const f = proBereich[b.id] || 0;
-            return `<a class="ort" href="#/bereich/${encodeURIComponent(b.id)}" style="left:calc(var(--u) * ${x});top:calc(var(--u) * ${y})" aria-label="${esc(b.name)}${f ? `, heute ${f} fällig` : ""}">
-              ${bildHTML("bereich", { kennung: b.kennung, stufe: stufeBereich(b.id), name: b.name })}
-              ${f ? `<span class="faehnchen"><span class="mast"></span><span class="fahne">${f}</span></span>` : ""}
-              <span class="name">${esc(b.name)}</span>
-            </a>`;
+            const link = `#/bereich/${encodeURIComponent(b.id)}`;
+            return `<a class="ort" href="${link}" style="left:${x}%;top:${y}%" aria-label="${esc(b.name)}${f ? `, heute ${f} fällig` : ""}">
+                ${bildHTML("bereich", { kennung: b.kennung, stufe: stufeBereich(b.id), name: b.name }, "width:100%;height:100%")}
+                ${faehnchen(f)}
+              </a>
+              <a class="schild" href="${link}" style="left:${x}%;top:${y}%" tabindex="-1" aria-hidden="true">${esc(b.name)}</a>`;
           }).join("")}
+          <button class="boot" style="left:${boot.links}%;top:${boot.oben}%;width:${boot.breite}%;height:${boot.hoehe}%"
+            ${steg.length ? `aria-label="Bildungsreise${stegFaellig ? `, heute ${stegFaellig} fällig` : ""}" data-boot` : 'disabled aria-hidden="true" tabindex="-1"'}>${faehnchen(stegFaellig)}</button>
         </div>
       </div>
     </section>`;
   $("[data-frei]", v)?.addEventListener("click", bereichWaehlen);
+  $("[data-boot]", v)?.addEventListener("click", bildungsreise);
+}
+
+// Blatt „Bildungsreise“: alle Bereiche ohne eigenen Bauplatz, auch der Sammelbereich selbst
+function bildungsreise() {
+  blatt(`<h2 class="ue">Bildungsreise</h2>
+    <div class="zeilen">${amSteg().map((b) => `
+      <a class="zeile hoch" href="#/bereich/${encodeURIComponent(b.id)}" style="background:var(--vertieft)">
+        <span style="display:flex;align-items:center;gap:12px;min-width:0">${bildHTML("bereich", { kennung: "allgemein", stufe: stufeBereich(b.id), name: "" }, "width:48px;height:48px")}<span class="zeile-text">${esc(b.name)}</span></span>
+        <span class="rechts">${esc(bereichStatus(b))}</span>
+      </a>`).join("")}</div>`);
 }
 
 /* ============================================================
@@ -622,21 +650,28 @@ function fastFertig() {
     .slice(0, 3);
 }
 
+// Stellflächen im Regal-Bild, gemessen an der Anzeige 350 × 300 (DESIGN.md 7.5)
+const REGAL = { breite: 350, hoehe: 300, buchUnten: [142, 239], offenUnten: 240, startX: 40, abstand: 17, jeReihe: 15 };
+const imRegal = (x, unten, b, h) => `left:${(x / REGAL.breite) * 100}%;top:${((unten - h) / REGAL.hoehe) * 100}%;width:${(b / REGAL.breite) * 100}%;height:${(h / REGAL.hoehe) * 100}%`;
+
 function zeigeFortschritt(v) {
   const s = db.stand.figur.stufe;
   const buecher = fertigePakete();
   const fast = fastFertig();
-  const reihen = [buecher.slice(0, 14), buecher.slice(14, 28)];
+  // obere Reihe: 15 Bücher; untere Reihe: links die offenen Bücher (je 48 px Tippfläche), danach weitere Bücher
+  const obenB = buecher.slice(0, REGAL.jeReihe);
+  const untenStart = REGAL.startX + fast.length * 48;
+  const untenPlatz = Math.floor((310 - untenStart) / REGAL.abstand);
+  const untenB = buecher.slice(REGAL.jeReihe, REGAL.jeReihe + Math.max(0, untenPlatz));
   v.innerHTML = `
     <header class="kopfzeile"><a class="tipp" href="#/ueben" aria-label="Zurück">${ic("zurueck")}</a><h1>Stufe ${s} von ${MAX_STUFE}</h1><span></span></header>
     <div class="seite">
       <div class="bibliothek">
-        <div class="regal">${bildHTML("regal", {}, "position:absolute;inset:0")}</div>
-        ${[96, 156].map((y, r) => `
-          <div class="boden" style="top:${(y / 300) * 100}%"></div>
-          <div class="buecher" style="bottom:${100 - (y / 300) * 100}%">${reihen[r].map((p, i) => bildHTML("buch", { nummer: ((r * 14 + i) % 4) + 1 })).join("")}</div>`).join("")}
-        <div class="figur-gross">${bildHTML("figur", { stufe: s })}</div>
-        <div class="offen">${fast.map(({ p }) => `<button aria-label="${esc(p.name)} lernen" data-paket="${esc(p.id)}">${bildHTML("buch-offen", {})}</button>`).join("")}</div>
+        ${bildHTML("regal", {}, "position:absolute;inset:0;width:100%;height:100%")}
+        ${obenB.map((p, i) => `<span class="buch" style="${imRegal(REGAL.startX + i * REGAL.abstand, REGAL.buchUnten[0], 18, 48)}">${bildHTML("buch", { nummer: (i % 4) + 1 }, "width:100%;height:100%")}</span>`).join("")}
+        ${untenB.map((p, i) => `<span class="buch" style="${imRegal(untenStart + i * REGAL.abstand, REGAL.buchUnten[1], 18, 48)}">${bildHTML("buch", { nummer: ((REGAL.jeReihe + i) % 4) + 1 }, "width:100%;height:100%")}</span>`).join("")}
+        <div class="figur-gross">${bildHTML("figur", { stufe: s }, "width:100%;height:100%")}</div>
+        ${fast.map(({ p }, i) => `<button class="offen" style="${imRegal(REGAL.startX + i * 48, REGAL.offenUnten, 48, 48)}" aria-label="${esc(p.name)} lernen" data-paket="${esc(p.id)}">${bildHTML("buch-offen", {}, "width:91.7%;height:66.7%")}</button>`).join("")}
       </div>
       <p class="neben mittig" style="margin-top:16px">${s < MAX_STUFE ? `Noch 1 Bereich ganz lernen bis Stufe ${s + 1}` : "Höchste Stufe erreicht."}</p>
       ${fast.length ? `<h2 class="zw" style="margin:24px 0 12px">Fast fertig</h2>
@@ -818,11 +853,6 @@ function hinzufuegen(bereichId) {
 
 /* ---------- Bereiche verwalten ---------- */
 
-const BILDER = [
-  ["allgemein", "Allgemein"], ["schule", "Schule"], ["lehrkraefte", "Lehrkräfte"], ["universitaeten", "Universitäten"],
-  ["senatsverwaltung", "Senatsverwaltung"], ["recht", "Recht"], ["schueler", "Schüler:innen"], ["lebenslang", "Lebenslanges Lernen"],
-];
-
 function zeigeVerwalten(v) {
   v.innerHTML = `
     ${kopf("Bereiche verwalten")}
@@ -833,13 +863,12 @@ function zeigeVerwalten(v) {
   $("[data-neu]", v).onclick = () => blatt(`
     <h2 class="ue">Neuer Bereich</h2>
     <div class="feld"><label for="n-name">Name</label><input id="n-name" autocomplete="off" placeholder="z. B. Kita"></div>
-    <div class="feld"><label for="n-bild">Bild auf der Landkarte</label><span class="auswahl"><select id="n-bild">${BILDER.map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join("")}</select>${ic("auf")}</span></div>
-    <p class="neben" style="margin-bottom:16px">Der Bereich bekommt ein leeres Basispaket.</p>
+    <p class="neben" style="margin-bottom:16px">Der Bereich bekommt ein leeres Basispaket. Auf der Landkarte findest du ihn bei der Bildungsreise am Steg.</p>
     <div class="knoepfe"><button class="knopf" data-anlegen>Anlegen</button><button class="knopf zweit" data-zu>Abbrechen</button></div>`, (bl) => {
     $("[data-zu]", bl).onclick = blattZu;
     $("[data-anlegen]", bl).onclick = async (e) => {
       const name = $("#n-name", bl).value.trim();
-      const kennung = $("#n-bild", bl).value;
+      const kennung = "allgemein";
       if (!name) return melden("Bitte einen Namen eingeben.");
       if (db.inhalt.bereiche.some((b) => b.name.toLowerCase() === name.toLowerCase())) return melden("Diesen Bereich gibt es schon.");
       if (!verbunden()) {
