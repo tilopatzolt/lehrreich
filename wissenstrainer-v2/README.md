@@ -19,7 +19,8 @@ bleibt dabei unverändert.
 - **Bereiche:** Welche Pakete zu welchem Bereich gehören, steht in `bereiche.json` im privaten
   Repository. Die App legt die Datei beim ersten Verbinden an und pflegt sie. Die Ordner und die
   Auswertung bleiben wie bisher. Pakete ohne Zuordnung landen im Sammelbereich „Bildungsreise“.
-- **Hinzufügen:** Text oder Datei, Titel, Bereich. „Neues Paket“ legt einen neuen Ordner in
+- **Hinzufügen:** Text, Datei oder **Foto**, Titel, Bereich. Fotos von Textseiten werden auf dem
+  Handy zu einem PDF (je Foto eine Seite, verkleinert auf 2000 px); Claude liest den Text darauf. „Neues Paket“ legt einen neuen Ordner in
   `privat/` an; „Zum Basispaket“ legt das Dokument in `privat/Grundlagen <Bereich>/`. Nach ein bis
   drei Minuten **Mehr → Neue Karten abrufen**.
 - **Paket in einen anderen Bereich:** auf der Paket-Seite die Zeile „Bereich“ antippen. Nur die

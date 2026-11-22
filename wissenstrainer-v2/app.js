@@ -14,7 +14,7 @@ import {
   paketBildSpeichern, paketTeilen, paketNichtTeilen, paketLink,
 } from "./github.js";
 
-const APP_STAND = "23.11.2026c";
+const APP_STAND = "23.11.2026d";
 
 /* ============================================================
    Hilfen
@@ -1042,10 +1042,11 @@ function hinzufuegen(bereichId) {
     <div class="wahl" data-gruppe="art" style="margin-bottom:16px">
       <button type="button" data-wert="text" class="an">Text einfügen</button>
       <button type="button" data-wert="datei">Datei</button>
-      <button type="button" disabled>Foto (später)</button>
+      <button type="button" data-wert="foto">Foto</button>
     </div>
     <div class="feld" data-fuer="text"><label for="h-text">Text</label><textarea id="h-text" placeholder="Text hier einfügen …"></textarea></div>
     <div class="feld" data-fuer="datei" hidden><label for="h-datei">Datei (PDF, Word, Text)</label><input id="h-datei" type="file" accept=".pdf,.docx,.txt,.md,.html,.htm"></div>
+    <div class="feld" data-fuer="foto" hidden><label for="h-foto">Fotos von Textseiten – mehrere werden ein Dokument, je Foto eine Seite</label><input id="h-foto" type="file" accept="image/*" multiple></div>
     <div class="feld"><label for="h-titel">Titel</label><input id="h-titel" autocomplete="off" placeholder="z. B. Startchancen-Programm"></div>
     <div class="feld"><label for="h-bereich">Bereich</label>
       <span class="auswahl"><select id="h-bereich">${bereiche.map((b) => `<option value="${esc(b.id)}" ${b.id === bereichId ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select>${ic("auf")}</span></div>
@@ -1066,9 +1067,11 @@ function hinzufuegen(bereichId) {
     $("[data-los]", bl).onclick = async (e) => {
       const text = $("#h-text", bl).value;
       const datei = $("#h-datei", bl).files[0];
+      const fotos = [...$("#h-foto", bl).files];
       const titel = $("#h-titel", bl).value.trim();
       if (art === "text" && !text.trim()) return melden("Bitte zuerst Text einfügen.");
       if (art === "datei" && !datei) return melden("Bitte eine Datei wählen.");
+      if (art === "foto" && !fotos.length) return melden("Bitte ein Foto aufnehmen oder auswählen.");
       if (!titel) return melden("Bitte einen Titel eingeben.");
       const knopf = e.currentTarget;
       knopf.disabled = true;
@@ -1076,7 +1079,8 @@ function hinzufuegen(bereichId) {
       try {
         const r = await hochladen({
           bereich: $("#h-bereich", bl).value, ziel, titel,
-          text: art === "text" ? text : "", datei: art === "datei" ? datei : null,
+          text: art === "text" ? text : "",
+          datei: art === "datei" ? datei : art === "foto" ? await fotosAlsPdf(fotos, titel, knopf) : null,
           vorhandeneIds: new Set(db.inhalt.pakete.map((x) => x.id)),
         });
         blattZu();
@@ -1088,6 +1092,75 @@ function hinzufuegen(bereichId) {
       }
     };
   });
+}
+
+/* ---------- Fotos → PDF ---------- */
+
+// Fotos von Textseiten werden auf dem Gerät zu einem PDF (je Foto eine Seite). Die Auswertung liest
+// PDFs samt Bildern; so bleibt sie unverändert und mehrere Seiten bleiben ein Dokument.
+async function fotosAlsPdf(fotos, titel, knopf) {
+  const seiten = [];
+  for (const [i, f] of fotos.entries()) {
+    knopf.textContent = `Foto ${i + 1} von ${fotos.length} …`;
+    seiten.push(await alsJpeg(f));
+  }
+  const name = `${tag()} ${titel.replace(/[\\/:]+/g, " - ").slice(0, 60).trim()}.pdf`;
+  return new File([pdfAusJpegs(seiten)], name, { type: "application/pdf" });
+}
+
+// Foto laden, auf höchstens 2000 px Kantenlänge verkleinern, als JPEG kodieren
+function alsJpeg(datei, max = 2000) {
+  return new Promise((ok, fehler) => {
+    const url = URL.createObjectURL(datei);
+    const img = new Image();
+    img.onload = () => {
+      const f = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.round(img.naturalWidth * f), h = Math.round(img.naturalHeight * f);
+      const c = Object.assign(document.createElement("canvas"), { width: w, height: h });
+      c.getContext("2d").drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      c.toBlob(async (b) => b ? ok({ bytes: new Uint8Array(await b.arrayBuffer()), w, h }) : fehler(new Error("Foto nicht lesbar")), "image/jpeg", 0.82);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); fehler(new Error("Foto nicht lesbar")); };
+    img.src = url;
+  });
+}
+
+// Kleinstes gültiges PDF: je Seite ein JPEG (DCTDecode), Seitengröße = Bildgröße in Punkt
+function pdfAusJpegs(seiten) {
+  const teile = [];
+  const ab = [];
+  let laenge = 0;
+  const raus = (x) => {
+    const b = typeof x === "string" ? new TextEncoder().encode(x) : x;
+    teile.push(b);
+    laenge += b.length;
+  };
+  const obj = (n, kopf, strom) => {
+    ab[n] = laenge;
+    raus(`${n} 0 obj\n${kopf}\n`);
+    if (strom) { raus("stream\n"); raus(strom); raus("\nendstream\n"); }
+    raus("endobj\n");
+  };
+  raus("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+  const anzahl = seiten.length;
+  const seitenNr = seiten.map((_, i) => 3 + i * 3);
+  obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  obj(2, `<< /Type /Pages /Count ${anzahl} /Kids [${seitenNr.map((n) => `${n} 0 R`).join(" ")}] >>`);
+  seiten.forEach((s, i) => {
+    const n = seitenNr[i];
+    const pw = (s.w * 0.75).toFixed(2), ph = (s.h * 0.75).toFixed(2);
+    const inhalt = `q ${pw} 0 0 ${ph} 0 0 cm /Bild Do Q`;
+    obj(n, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Bild ${n + 2} 0 R >> >> /Contents ${n + 1} 0 R >>`);
+    obj(n + 1, `<< /Length ${inhalt.length} >>`, new TextEncoder().encode(inhalt));
+    obj(n + 2, `<< /Type /XObject /Subtype /Image /Width ${s.w} /Height ${s.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${s.bytes.length} >>`, s.bytes);
+  });
+  const gesamt = 3 + anzahl * 3;
+  const xref = laenge;
+  raus(`xref\n0 ${gesamt}\n0000000000 65535 f \n`);
+  for (let n = 1; n < gesamt; n++) raus(`${String(ab[n]).padStart(10, "0")} 00000 n \n`);
+  raus(`trailer\n<< /Size ${gesamt} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(teile, { type: "application/pdf" });
 }
 
 /* ---------- Bereiche verwalten ---------- */
