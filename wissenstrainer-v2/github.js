@@ -283,6 +283,38 @@ export async function paketNichtTeilen(p) {
 // Link zum öffentlichen Paket – die erste Version zeigt öffentliche Pakete auch ohne Schlüssel
 export const paketLink = (p) => `https://${verbindung.oeffentlichRepo.split("/")[0]}.github.io/${verbindung.oeffentlichRepo.split("/")[1]}/#/paket/${encodeURIComponent(p.id)}`;
 
+/* ---------- Tägliche Erinnerung (erinnerung/ im privaten Repo) ---------- */
+
+const ERINNERUNG = "erinnerung";
+
+// Öffentlicher Schlüssel zum Abonnieren; der private bleibt bei GitHub (Workflow „Tägliche Erinnerung“)
+export async function erinnerungSchluessel() {
+  const d = await roh(verbindung.privatRepo, `${ERINNERUNG}/schluessel-oeffentlich.json`);
+  return d?.oeffentlich || null;
+}
+
+export async function aboSpeichern(abo, geraet) {
+  const pfad = `${ERINNERUNG}/abos.json`;
+  const abos = ((await roh(verbindung.privatRepo, pfad)) || []).filter((a) => a.abo?.endpoint !== abo.endpoint);
+  abos.push({ geraet, seit: tag(), abo });
+  await schreiben(verbindung.privatRepo, pfad, textBase64(JSON.stringify(abos, null, 1) + "\n"), "Wissenstrainer v2: Erinnerung eingeschaltet");
+}
+
+export async function aboEntfernen(endpoint) {
+  const pfad = `${ERINNERUNG}/abos.json`;
+  const abos = (await roh(verbindung.privatRepo, pfad)) || [];
+  const rest = abos.filter((a) => a.abo?.endpoint !== endpoint);
+  if (rest.length !== abos.length) {
+    await schreiben(verbindung.privatRepo, pfad, textBase64(JSON.stringify(rest, null, 1) + "\n"), "Wissenstrainer v2: Erinnerung ausgeschaltet");
+  }
+}
+
+// Fällige Karten je Tag melden, damit die Mitteilung um 10 Uhr die richtige Zahl nennt
+export async function erinnerungStandMelden(faellig) {
+  await schreiben(verbindung.privatRepo, `${ERINNERUNG}/stand.json`,
+    textBase64(JSON.stringify({ aktualisiert: new Date().toISOString(), faellig }, null, 1) + "\n"), "Wissenstrainer v2: fällige Karten");
+}
+
 /* ---------- Lernstand aus der ersten Version ---------- */
 
 // Nur lesen: die erste Version und ihr Speicher bleiben unverändert.

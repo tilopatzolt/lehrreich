@@ -1,0 +1,59 @@
+name: Tägliche Erinnerung
+
+# Schickt um 10 Uhr Berliner Zeit eine Mitteilung an die Geräte, die in der App (v2) unter
+# „Mehr → Erinnerung“ die Erinnerung eingeschaltet haben. Zwei Startzeiten (8 und 9 Uhr UTC),
+# weil Berlin im Sommer UTC+2 und im Winter UTC+1 ist; das Skript sendet nur, wenn es in Berlin
+# 10 Uhr ist. Beim allerersten Lauf erzeugt es stattdessen die Schlüssel zum Senden.
+on:
+  schedule:
+    - cron: "0 8,9 * * *"
+  workflow_dispatch:
+    inputs:
+      jetzt:
+        description: "Jetzt senden (zum Ausprobieren, ohne auf 10 Uhr zu warten)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: erinnerung
+  cancel-in-progress: false
+
+jobs:
+  erinnern:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Werkzeug aus dem öffentlichen Repo holen
+        uses: actions/checkout@v4
+        with:
+          repository: tilopatzolt/lehrreich
+          path: _werkzeug
+          sparse-checkout: wissenstrainer/pipeline
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install "pywebpush==2.0.3"
+
+      - name: Erinnerung senden
+        run: |
+          args=""
+          ${{ inputs.jetzt == true }} && args="--jetzt"
+          python _werkzeug/wissenstrainer/pipeline/erinnerung.py --ordner erinnerung $args
+
+      - name: Änderungen speichern (neue Schlüssel, abgelaufene Abos)
+        run: |
+          git add erinnerung
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name "wissenstrainer-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Wissenstrainer: Erinnerung aktualisiert"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

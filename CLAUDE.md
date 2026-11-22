@@ -61,5 +61,9 @@ Anleitung: `wissenstrainer-v2/README.md`.
   Sammelbereich `bildungsreise` („Bildungsreise“, Boot am Steg) sammelt Pakete ohne Zuordnung und
   alle Bereiche ohne Bauplatz; Bauplätze fest je Bereich in `KARTEN_PLAETZE` (`app.js`).
 - Bilder: nur über `bildpfad()` in `app.js`; Dateien in `img/` nach `design/13 Bildliste.md`.
+- Tägliche Erinnerung: `pipeline/erinnerung.py` + Workflow `erinnerung.yml` im privaten Repo
+  (Vorlage in `privat-vorlage/`), Dateien in `erinnerung/` (vapid.json bleibt privat,
+  schluessel-oeffentlich.json, abos.json, stand.json); in der App `zeigeErinnerung()` und der
+  `push`-Handler in `sw.js`.
 - Bei Änderungen `APP_STAND` in `app.js` und `VERSION` in `sw.js` erhöhen.
 - Logik-Tests: `node wissenstrainer-v2/test/kern.test.mjs` und `test/github.test.mjs`.

@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import {
   tag, plusTage, woche, neuerStand, bewerten, zaehlen, bereichsStufe, paketFertig, bereichBeherrscht,
-  figurPruefen, planWarteschlange, schwierigeKarten, freieKarten,
+  figurPruefen, planWarteschlange, schwierigeKarten, freieKarten, faelligVorschau,
 } from "../kern.js";
 
 const heute = "2026-11-22"; // ein Sonntag
@@ -70,5 +70,13 @@ assert.deepEqual(planWarteschlange(ks, sts, heute, { neuProTag: 1 }).map((k) => 
 assert.deepEqual(planWarteschlange(ks, sts, heute, { neuProTag: 5, neuHeuteSchon: 5 }).map((k) => k.id), ["p0", "p1"]);
 assert.deepEqual(schwierigeKarten(ks, sts).map((k) => k.id), ["p0"]);
 assert.deepEqual(freieKarten(ks, sts, () => 0.5).map((k) => k.id).slice(-2), ["p1", "p2"], "gewusste zuletzt");
+
+// Vorschau für die Erinnerung: p0, p1 heute fällig, p2 am 30.11.; 2 neue Karten, 1 pro Tag
+const vs = faelligVorschau(ks, sts, heute, { neuProTag: 1 }, 10);
+assert.equal(vs["2026-11-22"], 3, "2 fällige + 1 neue");
+assert.equal(vs["2026-11-23"], 3, "2 fällige + die zweite neue");
+assert.equal(vs["2026-11-24"], 2, "keine neuen mehr");
+assert.equal(vs["2026-11-30"], 3, "p2 kommt dazu");
+assert.equal(faelligVorschau(ks, sts, heute, { neuProTag: 1, neuHeuteSchon: 1 }, 2)["2026-11-22"], 2, "heute schon neue gelernt");
 
 console.log("Kern-Logik: alle Prüfungen bestanden");

@@ -115,3 +115,19 @@ export function freieKarten(karten, staende, zufall = Math.random) {
     .sort((a, b) => a[0] - b[0] || a[1] - b[1])
     .map((x) => x[2]);
 }
+
+// Fällige Karten je Tag für die nächsten Tage (für die tägliche Erinnerung um 10 Uhr):
+// alle bis dahin fälligen Wiederholungen plus die neuen Karten, die der Plan an dem Tag zulässt.
+// Grobe Vorschau: Was heute gelernt wird, verschiebt die Zahlen beim nächsten Melden.
+export function faelligVorschau(karten, staende, heute, { neuProTag = 10, neuHeuteSchon = 0 } = {}, tage = 14) {
+  const faellig = karten.map((k) => staende[k.id]).filter((st) => istAktiv(st) && st.wdh > 0).map((st) => st.faellig).sort();
+  let neu = karten.filter((k) => istNeu(staende[k.id])).length;
+  const ergebnis = {};
+  for (let i = 0; i < tage; i++) {
+    const t = plusTage(heute, i);
+    const neuHeute = Math.min(neu, Math.max(0, neuProTag - (i === 0 ? neuHeuteSchon : 0)));
+    ergebnis[t] = faellig.filter((f) => f <= t).length + neuHeute;
+    neu -= neuHeute;
+  }
+  return ergebnis;
+}
