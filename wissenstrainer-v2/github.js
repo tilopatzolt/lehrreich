@@ -128,6 +128,14 @@ export async function bereicheSpeichern(nachricht) {
   await schreiben(verbindung.privatRepo, PRIVAT.bereiche, textBase64(JSON.stringify(bereicheDatei, null, 1) + "\n"), nachricht);
 }
 
+// Paket in einen anderen Bereich legen (nur die Zuordnung ändert sich, Ordner und Karten bleiben)
+export async function paketZuordnen(pid, bereichId, paketName, bereichName) {
+  if (!bereicheDatei) bereicheDatei = await roh(verbindung.privatRepo, PRIVAT.bereiche);
+  if (!bereicheDatei) throw new Error("bereiche.json fehlt");
+  bereicheDatei.zuordnung[pid] = bereichId;
+  await bereicheSpeichern(`Wissenstrainer v2: Paket „${paketName}“ → ${bereichName}`);
+}
+
 /* ---------- Laden ---------- */
 
 // Pakete im Format der ersten Version → Inhalt der zweiten Version (Bereich → Paket → Karten)
