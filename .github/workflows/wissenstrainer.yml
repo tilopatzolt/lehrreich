@@ -3,11 +3,12 @@ name: Wissenstrainer
 # Läuft, sobald etwas in wissenstrainer/ auf main landet (z. B. ein neues Dokument in oeffentlich/):
 # 1. neue Dokumente mit Claude in Lernkarten-Pakete umwandeln (ein Unterordner = ein Paket)
 #    und die Pakete nach wissenstrainer/app/data/pakete/ schreiben
-# 2. die App unter wissenstrainer/app auf GitHub Pages veröffentlichen
+# 2. die App unter wissenstrainer/app auf GitHub Pages veröffentlichen,
+#    die zweite Version aus wissenstrainer-v2/ unter /v2/ daneben
 on:
   push:
     branches: [main]
-    paths: ["wissenstrainer/**", ".github/workflows/wissenstrainer.yml"]
+    paths: ["wissenstrainer/**", "wissenstrainer-v2/**", ".github/workflows/wissenstrainer.yml"]
   workflow_dispatch:
     inputs:
       retry_failed:
@@ -81,10 +82,18 @@ jobs:
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
+      - name: Seite zusammenstellen (erste Version + /v2/)
+        run: |
+          mkdir -p _site
+          cp -r wissenstrainer/app/. _site/
+          mkdir -p _site/v2
+          cp -r wissenstrainer-v2/. _site/v2/
+          rm -rf _site/v2/design _site/v2/test
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: wissenstrainer/app
+          path: _site
 
   deploy:
     needs: extract

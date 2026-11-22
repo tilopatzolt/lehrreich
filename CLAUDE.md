@@ -42,3 +42,19 @@ und lernen. Ausführliche Anleitung für Tilo: `wissenstrainer/README.md`.
 - Tilos echter Lernstand hängt an den Karten-IDs: nicht ohne Rückfrage neu auswerten.
 
 **Stand und offene Wünsche**: siehe ❓-Einträge in `design/ELEMENTE.md`.
+
+## Wissenstrainer v2 (`wissenstrainer-v2/`)
+
+Neu aufgebaute zweite Version, läuft unter `/v2/` neben der ersten (die bleibt unverändert).
+Anleitung: `wissenstrainer-v2/README.md`.
+
+- Vorgaben in `wissenstrainer-v2/design/`: `DESIGN.md` vor `08 Stil-Vorgabe.md` vor
+  `05 Skizzen Aufbau.html`; `01` ist älter, gilt nur, wo nichts Neueres steht. Verbotsliste in
+  `01` Teil B und `DESIGN.md` Abschnitt 12 beachten; nichts hinzufügen, was dort nicht steht.
+- Farben nur als Variablen im Block oben in `styles.css`; Schatten nur über `--schein-`Variablen;
+  Schrift nur Jost (liegt in `fonts/`), Icons Phosphor als Inline-SVG.
+- Eigene Speicherschlüssel `wt2.…` und eigener Service Worker (Cache `wt2-…`): nie Daten der
+  ersten Version lesen oder ändern.
+- Bilder: nur über `bildpfad()` in `app.js`; Dateien in `img/` nach `design/13 Bildliste.md`.
+- Bei Änderungen `APP_STAND` in `app.js` und `VERSION` in `sw.js` erhöhen.
+- Logik-Tests: `node wissenstrainer-v2/test/kern.test.mjs`.
