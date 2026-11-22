@@ -33,8 +33,8 @@
       "quellen": [{ "titel": "Schulgesetz für das Land Berlin", "herausgeber": "Land Berlin" }] }
   ],
   "karten": [
-    { "id": "s1", "paket": "schule-basis", "frage": "Wie viele Jahre dauert die Grundschule in Berlin in der Regel?", "antwort": "Sechs Jahre.", "quelle": "Schulgesetz Berlin" },
-    { "id": "s2", "paket": "schule-basis", "frage": "Welche zwei weiterführenden Schularten gibt es in Berlin?", "antwort": "Integrierte Sekundarschule und Gymnasium.", "quelle": "Schulgesetz Berlin" },
+    { "id": "s1", "paket": "schule-basis", "frage": "Wie viele Jahre dauert die Grundschule in Berlin in der Regel?", "antwort": "Sechs Jahre.", "quelle": "Schulgesetz Berlin", "tipp": "Berlin und Brandenburg sind die Ausnahme: In den meisten Ländern endet die Grundschule schon nach Klasse 4." },
+    { "id": "s2", "paket": "schule-basis", "frage": "Welche zwei weiterführenden Schularten gibt es in Berlin?", "antwort": "Integrierte Sekundarschule und Gymnasium.", "quelle": "Schulgesetz Berlin", "tipp": "Seit der Schulstrukturreform 2010 gibt es neben dem Gymnasium nur noch die ISS – Haupt-, Real- und Gesamtschulen gingen darin auf." },
     { "id": "s3", "paket": "schule-basis", "frage": "Wofür steht die Abkürzung ISS?", "antwort": "Integrierte Sekundarschule.", "quelle": "Schulgesetz Berlin" },
     { "id": "s4", "paket": "schule-basis", "frage": "Welche Schulform führt in Berlin von Klasse 1 bis zum Abitur?", "antwort": "Die Gemeinschaftsschule.", "quelle": "Schulgesetz Berlin" },
     { "id": "s5", "paket": "schule-basis", "frage": "Was ist der MSA?", "antwort": "Der Mittlere Schulabschluss am Ende von Klasse 10.", "quelle": "Schulgesetz Berlin" },

@@ -270,9 +270,12 @@ svg.ic { width: 24px; height: 24px; flex: none; }
 .lernkarte-platz { flex: 1; display: flex; padding: 16px var(--rand) 0; min-height: 0; }
 .lernkarte {
   flex: 1; background: var(--flaeche); border-radius: var(--ecke-karte); padding: 28px 24px; box-shadow: var(--schein-karte);
-  display: flex; flex-direction: column; justify-content: center; text-align: left; touch-action: pan-y; user-select: none;
+  display: flex; flex-direction: column; justify-content: flex-start; text-align: left; touch-action: pan-y; user-select: none; overflow-y: auto;
   transition: background-color 200ms; will-change: transform;
 }
+/* mittig, solange die Karte passt; ist sie zu lang, beginnt sie oben und rollt */
+.lernkarte::before, .lernkarte::after { content: ""; flex: 1 0 0; }
+.lernkarte > * { flex-shrink: 0; }
 .lernkarte .wo { font-size: 15px; color: var(--text-neben); }
 .lernkarte .frage { margin-top: 12px; font-size: 26px; font-weight: 600; line-height: 1.25; }
 .lernkarte .rueck { display: none; }
@@ -280,7 +283,11 @@ svg.ic { width: 24px; height: 24px; flex: none; }
 .lernkarte .strich { height: 4px; border-radius: 2px; background: var(--trenner); margin: 28px 0 24px; }
 .lernkarte .antwort { font-size: 22px; font-weight: 700; line-height: 1.25; }
 [data-theme="nacht"] .lernkarte .antwort { color: var(--licht); text-shadow: var(--schein-text); }
-.lernkarte .quelle { margin-top: 8px; font-size: 15px; color: var(--text-neben); }
+.lernkarte .quelle { margin-top: 8px; font-size: 15px; color: var(--text-neben); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* Debatten-Tipp: schlichter Absatz unter der Quelle, ohne Kasten (Vorschlag, DESIGN.md 14) */
+.tipp-block { margin-top: 24px; }
+.tipp-titel { font-size: 15px; font-weight: 700; color: var(--text-neben); line-height: 1.3; }
+.tipp-text { margin-top: 4px; font-size: 17px; font-weight: 500; line-height: 1.4; color: var(--text); }
 @keyframes einblenden { from { opacity: 0; } to { opacity: 1; } }
 .bewerten { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
 .bewerten button { display: flex; align-items: center; gap: 12px; font-size: 17px; font-weight: 600; min-height: 56px; color: var(--text); transition: opacity 150ms; }

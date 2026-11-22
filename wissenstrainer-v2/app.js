@@ -10,10 +10,10 @@ import {
 } from "./daten.js";
 import {
   verbunden, verbindung, verbindungSpeichern, trennen, pruefen, inhaltLaden, hochladen, ersteVersion,
-  lernstandUebernehmen, bereicheStand, bereicheSpeichern, bereichAnlegen, paketId, SAMMELBEREICH,
+  lernstandUebernehmen, bereicheStand, bereicheSpeichern, bereichAnlegen, paketId, SAMMELBEREICH, paketZuordnen,
 } from "./github.js";
 
-const APP_STAND = "22.11.2026d";
+const APP_STAND = "23.11.2026";
 
 /* ============================================================
    Hilfen
@@ -405,7 +405,8 @@ function zeigePaket(v, id) {
     <div class="seite" style="margin-top:20px">
       ${f ? `<a class="knopf" href="#/lernen/paket/${encodeURIComponent(p.id)}">Jetzt lernen (${f})</a>`
         : `<a class="knopf zweit" href="#/lernen/paketfrei/${encodeURIComponent(p.id)}" ${z.aktiv ? "" : "data-leer"}>Paket üben</a>`}
-      <div class="zeile" style="margin-top:12px"><span>Im täglichen Lernplan</span>
+      ${p.basis ? "" : `<button class="zeile" style="margin-top:12px" data-bereich-aendern><span>Bereich</span><span class="rechts">${esc(b.name)}</span></button>`}
+      <div class="zeile" style="margin-top:${p.basis ? 12 : 8}px"><span>Im täglichen Lernplan</span>
         <label class="schalter"><input type="checkbox" id="im-plan" ${imPlan(p.id) ? "checked" : ""} aria-label="Im täglichen Lernplan"><i></i></label></div>
       <div class="knopf-reihe" style="margin-top:12px">
         <button class="knopf zweit" data-spaeter="Weitergeben">Weitergeben</button>
@@ -420,9 +421,35 @@ function zeigePaket(v, id) {
     </div>`;
   $("#im-plan", v).onchange = (e) => pausieren(p.id, !e.target.checked);
   $("[data-bild]", v).onclick = () => spaeter("Die Bildauswahl");
+  $("[data-bereich-aendern]", v)?.addEventListener("click", () => bereichAendern(p));
   $$("[data-spaeter]", v).forEach((x) => x.onclick = () => spaeter(x.dataset.spaeter));
   $$("[data-karte]", v).forEach((x) => x.onclick = () => karteZeigen(karte(x.dataset.karte)));
   $("[data-leer]", v)?.addEventListener("click", (e) => { e.preventDefault(); melden("Erst Karten sichten, dann üben."); });
+}
+
+// Paket einem anderen Bereich zuordnen (Basispakete gehören fest zu ihrem Bereich)
+function bereichAendern(p) {
+  blatt(`<h2 class="ue">Bereich für „${esc(p.name)}“</h2>
+    <div class="zeilen">${db.inhalt.bereiche.map((b) => `
+      <button class="zeile" data-ziel="${esc(b.id)}" style="background:var(--${b.id === p.bereich ? "haupt" : "vertieft"});color:var(--${b.id === p.bereich ? "auf-haupt" : "text"})" ${b.id === p.bereich ? 'aria-current="true"' : ""}>
+        <span class="zeile-text">${esc(b.name)}</span></button>`).join("")}</div>`, (bl) => {
+    $$("[data-ziel]", bl).forEach((x) => x.onclick = async () => {
+      const ziel = x.dataset.ziel;
+      if (ziel === p.bereich) return blattZu();
+      $$("[data-ziel]", bl).forEach((y) => y.disabled = true);
+      try {
+        if (verbunden()) await paketZuordnen(p.id, ziel, p.name, bereich(ziel).name);
+        p.bereich = ziel;
+        inhaltSetzen(db.inhalt);
+        blattZu();
+        melden(`„${p.name}“ liegt jetzt in ${bereich(ziel).name}`);
+        zeichnen();
+      } catch (err) {
+        $$("[data-ziel]", bl).forEach((y) => y.disabled = false);
+        melden(`Speichern fehlgeschlagen: ${err.message}`);
+      }
+    });
+  });
 }
 
 function karteZeigen(k) {
@@ -433,6 +460,8 @@ function karteZeigen(k) {
     <div style="height:4px;border-radius:2px;background:var(--trenner);margin:24px 0 20px"></div>
     <p style="font-size:22px;font-weight:700;line-height:1.25">${esc(k.antwort)}</p>
     ${k.quelle ? `<p class="neben" style="margin-top:8px">Quelle: ${esc(k.quelle)}</p>` : ""}
+    ${k.tipp ? `<div class="tipp-block"><p class="tipp-titel">Für die Debatte</p><p class="tipp-text">${esc(k.tipp)}</p></div>` : ""}
+    ${k.einordnung ? `<div class="tipp-block"><p class="tipp-titel">Einordnung</p><p class="tipp-text">${esc(k.einordnung)}</p></div>` : ""}
     <div class="knoepfe" style="margin-top:24px"><button class="knopf zweit" data-bearbeiten>Bearbeiten</button><button class="knopf zweit" data-zu>Schließen</button></div>`, (bl) => {
     $("[data-zu]", bl).onclick = blattZu;
     $("[data-bearbeiten]", bl).onclick = () => bearbeiten(k);
@@ -505,6 +534,7 @@ function zeigeLernen(v, art = "plan", id) {
             <div class="strich"></div>
             <p class="antwort">${esc(k.antwort)}</p>
             ${k.quelle ? `<p class="quelle">Quelle: ${esc(k.quelle)}</p>` : ""}
+            ${k.tipp ? `<div class="tipp-block"><p class="tipp-titel">Für die Debatte</p><p class="tipp-text">${esc(k.tipp)}</p></div>` : ""}
           </div>
         </div>
       </div>
@@ -757,7 +787,7 @@ function zeigeSichten(v) {
         ${offen.length > 1 ? '<div class="hinten"></div>' : ""}
         <div class="lernkarte offen" role="group" aria-label="Karte">
           <p class="frage" style="margin-top:0">${esc(k.frage)}</p>
-          <div class="rueck"><div class="strich"></div><p class="antwort">${esc(k.antwort)}</p>${k.quelle ? `<p class="quelle">Quelle: ${esc(k.quelle)}</p>` : ""}</div>
+          <div class="rueck"><div class="strich"></div><p class="antwort">${esc(k.antwort)}</p>${k.quelle ? `<p class="quelle">Quelle: ${esc(k.quelle)}</p>` : ""}${k.tipp ? `<div class="tipp-block"><p class="tipp-titel">Für die Debatte</p><p class="tipp-text">${esc(k.tipp)}</p></div>` : ""}</div>
         </div>
       </div>
     </div>

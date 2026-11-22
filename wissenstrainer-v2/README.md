@@ -22,6 +22,8 @@ bleibt dabei unverändert.
 - **Hinzufügen:** Text oder Datei, Titel, Bereich. „Neues Paket“ legt einen neuen Ordner in
   `privat/` an; „Zum Basispaket“ legt das Dokument in `privat/Grundlagen <Bereich>/`. Nach ein bis
   drei Minuten **Mehr → Neue Karten abrufen**.
+- **Paket in einen anderen Bereich:** auf der Paket-Seite die Zeile „Bereich“ antippen. Nur die
+  Zuordnung in `bereiche.json` ändert sich; Basispakete bleiben fest in ihrem Bereich.
 - **Neue Bereiche:** Mehr → Bereiche verwalten. Sie haben keinen eigenen Bauplatz und fahren mit
   der Bildungsreise.
 
@@ -42,6 +44,8 @@ Plätze stehen in `app.js` in `KARTEN_PLAETZE` (Prozent der Karte, aus DESIGN.md
 - Ohne Verbindung: Beispieldaten mit drei Bereichen (Schule, Senatsverwaltung, Recht).
   Zurücksetzen unter **Mehr → Lernstand sichern**.
 - Mit Verbindung: deine echten Pakete aus der privaten und der öffentlichen Ablage, acht Bereiche.
+- Rückseite der Karte: Antwort, Quelle (höchstens 2 Zeilen) und – wo vorhanden – „Für die Debatte“
+  (Vorschlag, wird nach dem Testen entschieden). Die Detailansicht zeigt zusätzlich die Einordnung.
 - Noch nicht: Weitergeben, Teilen, Lernzettel, Bildauswahl, Fotos, Quiz.
 
 ## Regeln (kurz)
