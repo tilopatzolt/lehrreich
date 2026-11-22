@@ -1,5 +1,6 @@
 // Inhalte (Bereiche, Pakete, Karten) und Lernstand – nur im Browser, unter eigenen Schlüsseln.
-// Die erste Version (wt.v1 …) wird nicht gelesen und nicht verändert.
+// Die erste Version (wt.v1 …) wird nie verändert; gelesen wird sie nur einmal, wenn Tilo seinen
+// Lernstand beim ersten Verbinden übernehmen möchte (github.js).
 import {
   tag, plusTage, woche, neuerStand, zaehlen, bereichsStufe, paketFertig, bereichBeherrscht, figurPruefen,
 } from "./kern.js";
@@ -25,7 +26,9 @@ function schreiben(key, wert) {
 
 export const db = {
   inhalt: null, // { bereiche, pakete, karten }
-  stand: null, // { karten: {id: Stand}, log: {tag: {gelernt, neu}}, figur: {stufe, bereiche}, zuckertuete }
+  // { karten: {id: Stand}, log: {tag: {gelernt, neu}}, figur: {stufe, bereiche}, zuckertuete,
+  //   aenderungen: {id: {frage, antwort}}, pausiert: {paketId: true} }
+  stand: null,
   einst: { ...STANDARD },
 };
 
@@ -34,9 +37,26 @@ export async function laden() {
   db.inhalt = lesen(K.inhalt, null);
   db.stand = lesen(K.stand, null);
   if (!db.inhalt || !db.stand) await beispielLaden();
-  // Karten ohne Stand (neu hinzugekommen) beginnen als Entwurf
-  for (const k of db.inhalt.karten) if (!db.stand.karten[k.id]) db.stand.karten[k.id] = neuerStand();
+  inhaltSetzen(db.inhalt);
+}
+
+// Neuer Inhalt (Beispiel oder von GitHub): eigene Änderungen anwenden, neue Karten kommen zum Sichten
+export function inhaltSetzen(inhalt) {
+  db.inhalt = inhalt;
+  db.stand.aenderungen ||= {};
+  db.stand.pausiert ||= {};
+  for (const k of db.inhalt.karten) {
+    if (!db.stand.karten[k.id]) db.stand.karten[k.id] = neuerStand();
+    const a = db.stand.aenderungen[k.id];
+    if (a) Object.assign(k, Object.fromEntries(Object.entries(a).filter(([, v]) => v)));
+  }
   figurAktualisieren();
+  speichern();
+}
+
+export function karteAendern(k, frage, antwort) {
+  db.stand.aenderungen[k.id] = { frage, antwort };
+  Object.assign(k, { frage, antwort });
   speichern();
 }
 
@@ -50,7 +70,7 @@ export function speichern() {
 export async function beispielLaden() {
   const demo = await (await fetch("data/demo.json", { cache: "no-cache" })).json();
   const heute = tag();
-  const stand = { karten: {}, log: {}, figur: { stufe: 1, bereiche: [] }, zuckertuete: 0 };
+  const stand = { karten: {}, log: {}, figur: { stufe: 1, bereiche: [] }, zuckertuete: 0, aenderungen: {}, pausiert: {} };
   const art = Object.fromEntries(demo.pakete.map((p) => [p.id, p.demo]));
   const proPaket = {};
   for (const k of demo.karten) {
@@ -98,7 +118,12 @@ export const kartenVonBereich = (bid) => {
   const ids = new Set(paketeVon(bid).map((p) => p.id));
   return db.inhalt.karten.filter((k) => ids.has(k.paket));
 };
-export const imPlan = (pid) => !paket(pid)?.pausiert;
+export const imPlan = (pid) => !db.stand.pausiert?.[pid];
+export function pausieren(pid, aus) {
+  if (aus) db.stand.pausiert[pid] = true;
+  else delete db.stand.pausiert[pid];
+  speichern();
+}
 export const planKarten = () => db.inhalt.karten.filter((k) => imPlan(k.paket));
 
 export const zahlenPaket = (pid) => zaehlen(kartenVonPaket(pid), db.stand.karten, tag());
@@ -116,6 +141,14 @@ export function figurAktualisieren() {
 }
 
 /* ---------- Ändern ---------- */
+
+// Lernstand neu beginnen (beim Wechsel von Beispieldaten zu echten Daten), optional übernommen
+export function standNeu(uebernommen) {
+  db.stand = {
+    karten: {}, log: {}, figur: { stufe: 1, bereiche: [] }, zuckertuete: 0, aenderungen: {}, pausiert: {},
+    ...(uebernommen || {}),
+  };
+}
 
 export function neuerBereich(name, kennung) {
   const basis = `${slug(name)}-${Date.now().toString(36)}`;
