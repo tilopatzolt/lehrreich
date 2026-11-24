@@ -1,7 +1,9 @@
 """Tägliche Erinnerung für den Wissenstrainer v2 (Web-Push).
 
-Läuft im privaten Repo per Zeitplan (Workflow erinnerung.yml) und schickt um 10 Uhr Berliner Zeit
-eine Mitteilung an alle Geräte, die in der App die Erinnerung eingeschaltet haben.
+Läuft im privaten Repo per Zeitplan (Workflow erinnerung.yml) mehrmals am Vormittag und schickt
+beim ersten Lauf ab 10 Uhr Berliner Zeit eine Mitteilung an alle Geräte, die in der App die
+Erinnerung eingeschaltet haben – höchstens einmal am Tag. (GitHub startet Zeitpläne oft verspätet
+oder lässt einzelne aus; mehrere Gelegenheiten machen die Erinnerung zuverlässig.)
 
 Dateien im Ordner erinnerung/ des privaten Repos:
   vapid.json  – Schlüsselpaar zum Senden; wird beim ersten Lauf hier erzeugt (der private Teil
@@ -9,6 +11,7 @@ Dateien im Ordner erinnerung/ des privaten Repos:
   schluessel-oeffentlich.json – nur der öffentliche Teil; den liest die App beim Einschalten
   abos.json   – Push-Abos der Geräte; schreibt die App
   stand.json  – fällige Karten je Tag; schreibt die App, wenn sich etwas ändert
+  gesendet.json – Tag der letzten Erinnerung, damit sie nur einmal am Tag kommt
 
 Aufruf: python erinnerung.py [--ordner erinnerung] [--jetzt]
   --jetzt  ohne Uhrzeit-Prüfung senden (zum Ausprobieren über „Run workflow“)
@@ -24,7 +27,8 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 ZEITZONE = ZoneInfo("Europe/Berlin")
-STUNDE = 10
+STUNDE = 10       # ab dann wird gesendet …
+BIS_STUNDE = 14   # … aber nicht mehr nach 14 Uhr (lieber gar keine als eine abendliche Erinnerung)
 ABSENDER = "https://tilopatzolt.github.io"  # Kontaktangabe für die Push-Dienste (nur Adresse, ohne Pfad)
 
 
@@ -107,22 +111,31 @@ def main() -> int:
         return 0
 
     jetzt = dt.datetime.now(ZEITZONE)
-    if not args.jetzt and jetzt.hour != STUNDE:
-        print(f"Es ist {jetzt:%H:%M} in Berlin – gesendet wird um {STUNDE} Uhr.")
-        return 0
+    heute = jetzt.strftime("%Y-%m-%d")
+    pfad_gesendet = args.ordner / "gesendet.json"
+    if not args.jetzt:
+        if not STUNDE <= jetzt.hour < BIS_STUNDE:
+            print(f"Es ist {jetzt:%H:%M} in Berlin – gesendet wird zwischen {STUNDE} und {BIS_STUNDE} Uhr.")
+            return 0
+        if lesen(pfad_gesendet, {}).get("datum") == heute:
+            print("Heute schon erledigt.")
+            return 0
 
     abos = lesen(args.ordner / "abos.json", [])
     if not abos:
         print("Noch kein Gerät hat die Erinnerung eingeschaltet.")
         return 0
-    daten = nachricht(lesen(args.ordner / "stand.json", {}), jetzt.strftime("%Y-%m-%d"))
+    daten = nachricht(lesen(args.ordner / "stand.json", {}), heute)
     if daten is None:
         print("Heute ist nichts fällig – keine Mitteilung.")
-        return 0
-    behalten, gesendet = senden(abos, daten, schluessel)
-    print(f"{gesendet} Mitteilung(en) gesendet: {daten['text']}")
-    if len(behalten) != len(abos):
-        schreiben(args.ordner / "abos.json", behalten)
+    else:
+        behalten, gesendet = senden(abos, daten, schluessel)
+        print(f"{gesendet} Mitteilung(en) gesendet: {daten['text']}")
+        if len(behalten) != len(abos):
+            schreiben(args.ordner / "abos.json", behalten)
+    # ein Test („Jetzt senden“) zählt nicht als die Erinnerung des Tages
+    if not args.jetzt:
+        schreiben(pfad_gesendet, {"datum": heute, "uhrzeit": f"{jetzt:%H:%M}"})
     return 0
 
 

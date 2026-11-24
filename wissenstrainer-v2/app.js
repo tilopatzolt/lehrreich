@@ -15,7 +15,7 @@ import {
   erinnerungSchluessel, aboSpeichern, aboEntfernen, erinnerungStandMelden,
 } from "./github.js";
 
-const APP_STAND = "23.11.2026e";
+const APP_STAND = "24.11.2026";
 
 /* ============================================================
    Hilfen
@@ -760,26 +760,30 @@ function zeigeLernen(v, art = "plan", id) {
     </section>`;
 
   const el = $(".lernkarte", v);
-  const aufdecken = () => {
-    if (el.classList.contains("offen")) return;
-    el.classList.add("offen");
-    el.setAttribute("aria-label", "Antwort");
-    $$("[data-urteil]", v).forEach((b) => b.disabled = false);
-    $(".lernen-hinweis", v).textContent = "Wischen oder tippen zum Bewerten";
+  // Tippen dreht die Karte, beliebig oft hin und her. Bewerten geht, sobald die Antwort einmal zu sehen war.
+  let gesehen = false;
+  const umdrehen = () => {
+    const offen = el.classList.toggle("offen");
+    el.setAttribute("aria-label", offen ? "Frage zeigen" : "Antwort zeigen");
+    if (offen && !gesehen) {
+      gesehen = true;
+      $$("[data-urteil]", v).forEach((b) => b.disabled = false);
+    }
+    $(".lernen-hinweis", v).textContent = offen ? "Wischen zum Bewerten · Tippen dreht zurück" : "Tippen zeigt die Antwort · Wischen zum Bewerten";
   };
   const urteilen = (u) => {
-    if (!el.classList.contains("offen")) return;
+    if (!gesehen) return;
     fliegen(el, u === "gewusst" ? 1 : -1, () => werten(k, u));
   };
   el.addEventListener("keydown", (e) => {
-    if (e.key === " " || e.key === "Enter") { e.preventDefault(); aufdecken(); }
+    if (e.key === " " || e.key === "Enter") { e.preventDefault(); umdrehen(); }
     if (e.key === "ArrowLeft") urteilen("nochmal");
     if (e.key === "ArrowRight") urteilen("gewusst");
   });
   $$("[data-urteil]", v).forEach((b) => b.onclick = () => urteilen(b.dataset.urteil));
   wischen(el, {
-    tippen: aufdecken,
-    darf: () => el.classList.contains("offen"),
+    tippen: umdrehen,
+    darf: () => gesehen,
     fertig: (r) => werten(k, r > 0 ? "gewusst" : "nochmal"),
   });
 }
@@ -867,7 +871,7 @@ function zeigeGeschafft(v) {
   v.innerHTML = `
     <section class="feier">
       <div class="feier-bild">
-        ${bildHTML("figur", { stufe: db.stand.figur.stufe, zustand: "jubel" })}
+        <div class="huepfer">${bildHTML("figur", { stufe: db.stand.figur.stufe, zustand: "jubel" })}</div>
         <div class="gabe">${bildHTML("gabe", { nummer: gabe })}</div>
       </div>
       <h1 class="feier-ue">Geschafft.</h1>
@@ -877,6 +881,10 @@ function zeigeGeschafft(v) {
         <a class="knopf zweit" href="#/welt">Zur Welt</a>
       </div>
     </section>`;
+  // Bewegung erst starten, wenn Figur und Gabe geladen sind (sonst ist sie vorbei, bevor man sie sieht)
+  const bilder = $$(".feier-bild img", v).map((img) => img.decode?.().catch(() => {}) ?? Promise.resolve());
+  Promise.race([Promise.all(bilder), new Promise((ok) => setTimeout(ok, 1500))])
+    .then(() => requestAnimationFrame(() => $(".feier", v)?.classList.add("los")));
   $("[data-nochmal]", v).onclick = () => {
     const { art, id } = runde;
     runde = rundeBauen(art, id);

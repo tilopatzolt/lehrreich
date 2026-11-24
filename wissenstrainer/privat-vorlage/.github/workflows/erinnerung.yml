@@ -1,12 +1,13 @@
 name: Tägliche Erinnerung
 
-# Schickt um 10 Uhr Berliner Zeit eine Mitteilung an die Geräte, die in der App (v2) unter
-# „Mehr → Erinnerung“ die Erinnerung eingeschaltet haben. Zwei Startzeiten (8 und 9 Uhr UTC),
-# weil Berlin im Sommer UTC+2 und im Winter UTC+1 ist; das Skript sendet nur, wenn es in Berlin
-# 10 Uhr ist. Beim allerersten Lauf erzeugt es stattdessen die Schlüssel zum Senden.
+# Schickt ab 10 Uhr Berliner Zeit einmal am Tag eine Mitteilung an die Geräte, die in der App (v2)
+# unter „Mehr → Erinnerung“ die Erinnerung eingeschaltet haben. GitHub startet Zeitpläne oft
+# verspätet oder lässt einzelne aus, deshalb läuft der Ablauf am Vormittag alle 20 Minuten (nicht
+# zur vollen Stunde, da ist GitHub am vollsten); das Skript sendet beim ersten Lauf ab 10 Uhr und
+# merkt sich den Tag. Beim allerersten Lauf erzeugt es stattdessen die Schlüssel zum Senden.
 on:
   schedule:
-    - cron: "0 8,9 * * *"
+    - cron: "7,27,47 8-11 * * *"
   workflow_dispatch:
     inputs:
       jetzt:

@@ -301,10 +301,25 @@ svg.ic { width: 24px; height: 24px; flex: none; }
 .feier { min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 64px var(--rand) 48px; }
 .feier-bild { position: relative; width: 220px; height: 220px; }
 .feier-bild .bild { width: 220px; height: 220px; }
-.gabe { position: absolute; left: 44px; top: 96px; width: 32px; height: 32px; animation: gabe 400ms ease-in forwards; }
+/* Jubel: die Figur hüpft zweimal, dann fällt eine Gabe in die Zuckertüte, dann erscheint „Geschafft.“ */
+.huepfer { width: 220px; height: 220px; transform-origin: bottom center; }
+.feier.los .huepfer { animation: huepfen 900ms ease-out both; }
+@keyframes huepfen {
+  0% { transform: translateY(0) scale(1, 1); }
+  12% { transform: translateY(0) scale(1.04, 0.94); }
+  28% { transform: translateY(-26px) scale(0.97, 1.04); }
+  44% { transform: translateY(0) scale(1.05, 0.93); }
+  60% { transform: translateY(-14px) scale(0.98, 1.02); }
+  76%, 100% { transform: translateY(0) scale(1, 1); }
+}
+.gabe { position: absolute; left: 44px; top: 96px; width: 32px; height: 32px; opacity: 0; }
+.feier.los .gabe { animation: gabe 600ms 850ms ease-in both; }
 .gabe .bild { width: 32px; height: 32px; }
 .gabe .platz { border-radius: 50%; background: var(--lack-gelb); padding: 0; font-size: 0; }
-@keyframes gabe { from { transform: translateY(-70px); opacity: 1; } 85% { opacity: 1; } to { transform: translateY(0); opacity: 0; } }
+@keyframes gabe { from { transform: translateY(-90px) rotate(-20deg); opacity: 1; } 80% { transform: translateY(0) rotate(0); opacity: 1; } to { transform: translateY(4px); opacity: 0; } }
+.feier .feier-ue, .feier .satz { opacity: 0; }
+.feier.los .feier-ue, .feier.los .satz { animation: auftauchen 400ms 1300ms ease-out both; }
+@keyframes auftauchen { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .feier .feier-ue { margin-top: 40px; }
 .feier .satz { margin-top: 12px; max-width: 300px; font-size: 17px; color: var(--text-neben); }
 .feier .knoepfe { width: 100%; margin-top: 48px; display: grid; gap: 12px; }
@@ -393,4 +408,5 @@ svg.ic { width: 24px; height: 24px; flex: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+  .feier .feier-ue, .feier .satz { opacity: 1; }
 }
